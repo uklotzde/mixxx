@@ -1302,10 +1302,24 @@ TrackPointer TrackDAO::getTrackFromDB(TrackId trackId) const {
     } else {
         pTrack->markClean();
         // Synchronize the track's metadata with the corresponding source
-        // file. This import might have never been completed successfully
-        // before, so just check and try for every track that has been
-        // freshly loaded from the database.
-        SoundSourceProxy(pTrack).updateTrackFromSource();
+        // file. This must be done while the TrackCache is still locked and
+        // before inserting the track into the recent tracks cache!
+        if (m_pConfig &&
+                // Both options must be enabled for proper two-way synchronization!
+                (m_pConfig->getValueString(ConfigKey("[Library]","SyncTrackMetadataExport")).toInt() == 1) &&
+                (m_pConfig->getValueString(ConfigKey("[Library]","SyncTrackMetadataImport")).toInt() == 1)) {
+            // Consider the file tags to be the "book of records" for track metadata
+            // while the Mixxx library only serves as a cache for searching/filtering/
+            // organizing with additional track metadata like waveforms and cue points
+            SoundSourceProxy(pTrack).updateTrackFromSource(
+                    SoundSourceProxy::ImportTrackMetadataMode::Again);
+        } else {
+            // Default case: This import might have never been completed
+            // successfully before, so just check and try for every track
+            // that has been freshly loaded from the database.
+            SoundSourceProxy(pTrack).updateTrackFromSource(
+                    SoundSourceProxy::ImportTrackMetadataMode::Once);
+        }
     }
 
     // Data migration: Reload track total from file tags if not initialized
