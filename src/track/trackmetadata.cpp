@@ -2,6 +2,107 @@
 
 namespace mixxx {
 
+class MetadataFields {
+  public:
+    bool merge(QString& target, QString source) {
+        if (target.isNull() && !source.isNull()) {
+            target = std::move(source);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool update(QString& target, QString source) {
+        if (!source.isNull()) {
+            target = std::move(source);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool merge(QDateTime& target, QDateTime source) {
+        if (target.isNull() && !source.isNull()) {
+            target = std::move(source);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool update(QDateTime& target, QDateTime source) {
+        if (!source.isNull()) {
+            target = std::move(source);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool merge(QUuid& target, QUuid source) {
+        if (target.isNull() && !source.isNull()) {
+            target = std::move(source);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool update(QUuid& target, QUuid source) {
+        if (!source.isNull()) {
+            target = std::move(source);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool merge(Bpm& target, Bpm source) {
+        if (!target.hasValue() && source.hasValue()) {
+            target = std::move(source);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool update(Bpm& target, Bpm source) {
+        if (source.hasValue()) {
+            target = std::move(source);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool merge(ReplayGain& target, ReplayGain source) {
+        bool result = false;
+        if (!target.hasRatio() && source.hasRatio()) {
+            target.setRatio(source.getRatio());
+            result = true;
+        }
+        if (!target.hasPeak() && source.hasPeak()) {
+            target.setPeak(source.getPeak());
+            result = true;
+        }
+        return result;
+    }
+
+    bool update(ReplayGain& target, ReplayGain source) {
+        bool result = false;
+        if (source.hasRatio()) {
+            target.setRatio(source.getRatio());
+            result = true;
+        }
+        if (source.hasPeak()) {
+            target.setPeak(source.getPeak());
+            result = true;
+        }
+        return result;
+    }
+};
+
 /*static*/ constexpr int TrackMetadata::kCalendarYearInvalid;
 
 int TrackMetadata::parseCalendarYear(QString year, bool* pValid) {
