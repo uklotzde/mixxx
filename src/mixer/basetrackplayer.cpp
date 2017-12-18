@@ -120,6 +120,7 @@ BaseTrackPlayerImpl::BaseTrackPlayerImpl(QObject* pParent,
 
 BaseTrackPlayerImpl::~BaseTrackPlayerImpl() {
     unloadTrack();
+    delete m_pChannel;
 }
 
 TrackPointer BaseTrackPlayerImpl::loadFakeTrack(bool bPlay, double filebpm) {
