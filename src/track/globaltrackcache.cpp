@@ -195,30 +195,14 @@ void GlobalTrackCache::saver(std::shared_ptr<Track> pTrack) {
         // Simply omit saving when the cache is no
         // longer available. This might but should not happen.
         kLogger.warning()
-                << "Deleting uncached track";
+                << "Omit saving uncached track" << pTrack->getCanonicalLocation();
     }
 }
 
 //static
 void GlobalTrackCache::deleter(Track* plainPtr) {
     DEBUG_ASSERT(plainPtr);
-    // Any access to plainPtr is forbidden!! Due to race condition
-    // this pointer might already have been deleted! This happens
-    // when a previous invocation is outpaced by a following
-    // invocation that will already delete the object behind the
-    // pointer. Tracks might be revived before being deleted and
-    // as a consequence the reference count might drop to 0 multiple
-    // times. The order in which those competing invocations finally
-    // lock and enter the thread-safe cache is undefined!!!
-    if (s_pInstance) {
-        s_pInstance->evictAndSave(plainPtr);
-    } else {
-        // Simply delete unreferenced tracks when the cache is no
-        // longer available. This might but should not happen.
-        kLogger.warning()
-                << "Deleting uncached track";
-        deleteTrack(plainPtr);
-    }
+    deleteTrack(plainPtr);
 }
 
 GlobalTrackCache::GlobalTrackCache(GlobalTrackCacheEvictor* pEvictor)
@@ -556,110 +540,60 @@ bool GlobalTrackCache::evictAndSave(
     // While saving only a single owner is allowed to
     // guarantee exclusive access to the track and the
     // corresponding file.
-    kLogger.debug() << "Saving track with use_count" << pTrack.use_count();
-    if (pTrack.use_count() != 1) {
-        // we must have handed out the Track in the meantime
+    kLogger.debug() << "Saving track with use_count" << sharedPtr.use_count();
+    if (sharedPtr.use_count() != 1) {
+        // we must have handed out a TrackPointer in the meantime
         return false;
     }
-
-    /*
-    const IndexedTracks::iterator indexedTrack =
-            m_indexedTracks.find(plainPtr);
-    if (indexedTrack == m_indexedTracks.end()) {
-        if (m_unindexedTracks.erase(plainPtr)) {
-            // Unindexed tracks are directly deleted without
-            // invoking the post-evict hook! This only happens
-            // when resetting the indices while some tracks
-            // are still cached and indexed.
-            if (debugLogEnabled()) {
-                kLogger.debug()
-                        << "Deleting unindexed track"
-                        << createTrackRef(*plainPtr)
-                        << plainPtr;
-            }
-            deleteTrack(plainPtr);
-            return true;
-        } else {
-            // Due to a rare but expected race condition the track
-            // has already been deleted and must not be deleted
-            // again!
-            if (debugLogEnabled()) {
-                kLogger.debug()
-                        << "Skip deletion of already deleted track"
-                        << plainPtr;
-            }
-            return false;
-        }
-    }
-
-    // Now we know that the pointer has not been deleted before
-    // and we can safely access it!
     return evictAndSave(
             &cacheLocker,
-            indexedTrack,
+            sharedPtr,
             false);
-    */
-    deleteTrack(plainPtr);
-    return true;
 }
 
-/*
 bool GlobalTrackCache::evictAndSave(
         GlobalTrackCacheLocker* pCacheLocker,
-        TrackPointer strongPtr,
+        std::shared_ptr<Track> sharedPtr,
         bool evictUnexpired) {
-    DEBUG_ASSERT(strongPtr);
-    const auto trackRef = createTrackRef(*strongPtr);
+    DEBUG_ASSERT(sharedPtr);
+    const auto trackRef = createTrackRef(*sharedPtr);
     if (debugLogEnabled()) {
         kLogger.debug()
                 << "Evicting indexed track"
                 << trackRef
-                << strongPtr.get();
+                << sharedPtr.get();
     }
 
-    const bool evicted = evict(trackRef, indexedTrack, evictUnexpired);
+    const bool evicted = evict(trackRef, sharedPtr, evictUnexpired);
     DEBUG_ASSERT(verifyConsistency());
     if (evicted) {
         // The evicted entry must not be accessible anymore!
         DEBUG_ASSERT(!lookupByRef(trackRef));
-        afterEvicted(pCacheLocker, strongPtr);
+        afterEvicted(pCacheLocker, sharedPtr.get());
         // After returning from the callback the lock might have
         // already been released!
         if (debugLogEnabled()) {
             kLogger.debug()
                     << "Deleting evicted track"
                     << trackRef
-                    << strongPtr;
+                    << sharedPtr.get();
         }
         return true;
-    } else {
-        // ...otherwise the given plainPtr is still referenced within
-        // the cache and must not be deleted yet!
-        if (debugLogEnabled()) {
-            kLogger.debug()
-                    << "Keeping unevicted track"
-                    << trackRef
-                    << strongPtr;
-        }
-        return false;
     }
+    return evicted;
 }
 
 bool GlobalTrackCache::evict(
         const TrackRef& trackRef,
-        IndexedTracks::iterator indexedTrack,
+        std::shared_ptr<Track> sharedPtr,
         bool evictUnexpired) {
-    Track* plainPtr = (*indexedTrack).first;
-    DEBUG_ASSERT(plainPtr);
-    DEBUG_ASSERT(m_unindexedTracks.find(plainPtr) == m_unindexedTracks.end());
-    TrackWeakPointer weakPtr = (*indexedTrack).second;
-    if (!(evictUnexpired || weakPtr.expired())) {
+    DEBUG_ASSERT(sharedPtr);
+    if (!(evictUnexpired || sharedPtr.use_count() != 1)) {
         return false;
     }
     if (trackRef.hasId()) {
         const auto trackById = m_tracksById.find(trackRef.getId());
         if (trackById != m_tracksById.end()) {
-            DEBUG_ASSERT((*trackById).second == plainPtr);
             m_tracksById.erase(trackById);
         }
     }
@@ -667,11 +601,10 @@ bool GlobalTrackCache::evict(
         const auto trackByCanonicalLocation(
                 m_tracksByCanonicalLocation.find(trackRef.getCanonicalLocation()));
         if (m_tracksByCanonicalLocation.end() != trackByCanonicalLocation) {
-            DEBUG_ASSERT((*trackByCanonicalLocation).second == plainPtr);
             m_tracksByCanonicalLocation.erase(
                     trackByCanonicalLocation);
         }
     }
     return true;
 }
-*/
+

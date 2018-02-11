@@ -182,18 +182,14 @@ private:
     bool evictAndSave(
             std::shared_ptr<Track> sharedPtr);
 
-    /*
-    typedef std::set<TrackWeakPointer> IndexedTracks;
-
     bool evictAndSave(
-            GlobalTrackCacheLocker* nullable pCacheLocker,
-            IndexedTracks::iterator indexedTrack,
+            GlobalTrackCacheLocker* pCacheLocker,
+            std::shared_ptr<Track> sharedPtr,
             bool evictUnexpired);
     bool evict(
             const TrackRef& trackRef,
-            IndexedTracks::iterator indexedTrack,
+            std::shared_ptr<Track> sharedPtr,
             bool evictUnexpired);
-    */
 
     void afterEvicted(
             GlobalTrackCacheLocker* /*nullable*/ pCacheLocker,
