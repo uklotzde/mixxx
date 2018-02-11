@@ -274,6 +274,7 @@ bool GlobalTrackCache::verifyConsistency() {
                     (m_tracksById.end() == j) || ((*j).second.lock() == strongPtr)) {
                 return false;
             }
+            ++i;
         }
     }
     return true;
