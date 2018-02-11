@@ -179,13 +179,13 @@ private:
             TrackRef trackRef,
             TrackId trackId);
 
-    bool evictAndDelete(
-            Track* plainPtr);
+    bool evictAndSave(
+            std::shared_ptr<Track> sharedPtr);
 
     /*
     typedef std::set<TrackWeakPointer> IndexedTracks;
 
-    bool evictAndDelete(
+    bool evictAndSave(
             GlobalTrackCacheLocker* nullable pCacheLocker,
             IndexedTracks::iterator indexedTrack,
             bool evictUnexpired);

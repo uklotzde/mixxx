@@ -189,12 +189,14 @@ void GlobalTrackCache::destroyInstance() {
 
 //static
 void GlobalTrackCache::saver(std::shared_ptr<Track> pTrack) {
-    DEBUG_ASSERT(pTrack);
-    // While saving only a single owner is allowed to
-    // guarantee exclusive access to the track and the
-    // corresponding file.
-    kLogger.debug() << "Saving track with use_count" << pTrack.use_count();
-    DEBUG_ASSERT(pTrack.use_count() == 1);
+    if (s_pInstance) {
+        s_pInstance->evictAndSave(pTrack);
+    } else {
+        // Simply omit saving when the cache is no
+        // longer available. This might but should not happen.
+        kLogger.warning()
+                << "Deleting uncached track";
+    }
 }
 
 //static
@@ -209,7 +211,7 @@ void GlobalTrackCache::deleter(Track* plainPtr) {
     // times. The order in which those competing invocations finally
     // lock and enter the thread-safe cache is undefined!!!
     if (s_pInstance) {
-        s_pInstance->evictAndDelete(plainPtr);
+        s_pInstance->evictAndSave(plainPtr);
     } else {
         // Simply delete unreferenced tracks when the cache is no
         // longer available. This might but should not happen.
@@ -301,20 +303,18 @@ void GlobalTrackCache::deactivate() {
     // referenced or not. This ensures that the eviction
     // callback is triggered for all modified tracks before
     // exiting the application.
-    /*
     while (!m_tracksById.empty()) {
-        evictAndDelete(
+        evictAndSave(
                 nullptr,
-                TrackPointer(m_tracksById.begin()->second),
+                m_tracksById.begin()->second.lock(),
                 true);
     }
     while (!m_tracksByCanonicalLocation.empty()) {
-        evictAndDelete(
+        evictAndSave(
                 nullptr,
-                TrackPointer(m_tracksByCanonicalLocation.begin()->second),
+                m_tracksByCanonicalLocation.begin()->second.lock(),
                 true);
     }
-    */
     m_pEvictor = nullptr;
 }
 
@@ -548,10 +548,19 @@ void GlobalTrackCache::afterEvicted(
     // callback!!
 }
 
-bool GlobalTrackCache::evictAndDelete(
-        Track* plainPtr) {
-    DEBUG_ASSERT(plainPtr);
+bool GlobalTrackCache::evictAndSave(
+        std::shared_ptr<Track> sharedPtr) {
+    DEBUG_ASSERT(sharedPtr);
     GlobalTrackCacheLocker cacheLocker;
+
+    // While saving only a single owner is allowed to
+    // guarantee exclusive access to the track and the
+    // corresponding file.
+    kLogger.debug() << "Saving track with use_count" << pTrack.use_count();
+    if (pTrack.use_count() != 1) {
+        // we must have handed out the Track in the meantime
+        return false;
+    }
 
     /*
     const IndexedTracks::iterator indexedTrack =
@@ -585,7 +594,7 @@ bool GlobalTrackCache::evictAndDelete(
 
     // Now we know that the pointer has not been deleted before
     // and we can safely access it!
-    return evictAndDelete(
+    return evictAndSave(
             &cacheLocker,
             indexedTrack,
             false);
@@ -595,7 +604,7 @@ bool GlobalTrackCache::evictAndDelete(
 }
 
 /*
-bool GlobalTrackCache::evictAndDelete(
+bool GlobalTrackCache::evictAndSave(
         GlobalTrackCacheLocker* pCacheLocker,
         TrackPointer strongPtr,
         bool evictUnexpired) {
@@ -663,7 +672,6 @@ bool GlobalTrackCache::evict(
                     trackByCanonicalLocation);
         }
     }
-    m_indexedTracks.erase(indexedTrack);
     return true;
 }
 */
