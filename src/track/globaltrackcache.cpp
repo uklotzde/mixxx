@@ -290,14 +290,12 @@ void GlobalTrackCache::deactivate() {
     while (!m_tracksById.empty()) {
         evictAndSave(
                 nullptr,
-                m_tracksById.begin()->second.lock(),
-                true);
+                m_tracksById.begin()->second.lock());
     }
     while (!m_tracksByCanonicalLocation.empty()) {
         evictAndSave(
                 nullptr,
-                m_tracksByCanonicalLocation.begin()->second.lock(),
-                true);
+                m_tracksByCanonicalLocation.begin()->second.lock());
     }
     m_pEvictor = nullptr;
 }
@@ -545,16 +543,15 @@ bool GlobalTrackCache::evictAndSave(
         // we must have handed out a TrackPointer in the meantime
         return false;
     }
-    return evictAndSave(
+    evictAndSave(
             &cacheLocker,
-            sharedPtr,
-            false);
+            sharedPtr);
+    return true;
 }
 
-bool GlobalTrackCache::evictAndSave(
+void GlobalTrackCache::evictAndSave(
         GlobalTrackCacheLocker* pCacheLocker,
-        std::shared_ptr<Track> sharedPtr,
-        bool evictUnexpired) {
+        std::shared_ptr<Track> sharedPtr) {
     DEBUG_ASSERT(sharedPtr);
     const auto trackRef = createTrackRef(*sharedPtr);
     if (debugLogEnabled()) {
@@ -564,33 +561,25 @@ bool GlobalTrackCache::evictAndSave(
                 << sharedPtr.get();
     }
 
-    const bool evicted = evict(trackRef, sharedPtr, evictUnexpired);
+    evict(trackRef, sharedPtr);
     DEBUG_ASSERT(verifyConsistency());
-    if (evicted) {
-        // The evicted entry must not be accessible anymore!
-        DEBUG_ASSERT(!lookupByRef(trackRef));
-        afterEvicted(pCacheLocker, sharedPtr.get());
-        // After returning from the callback the lock might have
-        // already been released!
-        if (debugLogEnabled()) {
-            kLogger.debug()
-                    << "Deleting evicted track"
-                    << trackRef
-                    << sharedPtr.get();
-        }
-        return true;
+    // The evicted entry must not be accessible anymore!
+    DEBUG_ASSERT(!lookupByRef(trackRef));
+    afterEvicted(pCacheLocker, sharedPtr.get());
+    // After returning from the callback the lock might have
+    // already been released!
+    if (debugLogEnabled()) {
+        kLogger.debug()
+                << "Deleting evicted track"
+                << trackRef
+                << sharedPtr.get();
     }
-    return evicted;
 }
 
-bool GlobalTrackCache::evict(
+void GlobalTrackCache::evict(
         const TrackRef& trackRef,
-        std::shared_ptr<Track> sharedPtr,
-        bool evictUnexpired) {
+        std::shared_ptr<Track> sharedPtr) {
     DEBUG_ASSERT(sharedPtr);
-    if (!(evictUnexpired || sharedPtr.use_count() != 1)) {
-        return false;
-    }
     if (trackRef.hasId()) {
         const auto trackById = m_tracksById.find(trackRef.getId());
         if (trackById != m_tracksById.end()) {
@@ -605,6 +594,5 @@ bool GlobalTrackCache::evict(
                     trackByCanonicalLocation);
         }
     }
-    return true;
 }
 

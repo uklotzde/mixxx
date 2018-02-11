@@ -5,6 +5,7 @@
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
+#include <memory>
 
 #include "track/track.h"
 #include "track/trackref.h"
@@ -182,14 +183,12 @@ private:
     bool evictAndSave(
             std::shared_ptr<Track> sharedPtr);
 
-    bool evictAndSave(
+    void evictAndSave(
             GlobalTrackCacheLocker* pCacheLocker,
-            std::shared_ptr<Track> sharedPtr,
-            bool evictUnexpired);
-    bool evict(
+            std::shared_ptr<Track> sharedPtr);
+    void evict(
             const TrackRef& trackRef,
-            std::shared_ptr<Track> sharedPtr,
-            bool evictUnexpired);
+            std::shared_ptr<Track> sharedPtr);
 
     void afterEvicted(
             GlobalTrackCacheLocker* /*nullable*/ pCacheLocker,
