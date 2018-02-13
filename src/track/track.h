@@ -27,7 +27,7 @@ class TrackPointer {
         : m_saver(nullptr) {
     }
     TrackPointer(const TrackWeakPointer& pTrack,
-            void (*saver)(std::shared_ptr<Track>))
+            void (*saver)(std::weak_ptr<Track>))
         : m_shared_ptr(pTrack.lock()),
           m_saver(saver) {
     }
@@ -35,7 +35,7 @@ class TrackPointer {
         : m_shared_ptr(pTrack),
           m_saver(nullptr) {
     }
-    TrackPointer(Track* pTrack, void (*saver)(std::shared_ptr<Track>),
+    TrackPointer(Track* pTrack, void (*saver)(std::weak_ptr<Track>),
             void (*deleter)(Track*))
         : m_shared_ptr(pTrack, deleter),
           m_saver(saver) {
@@ -110,7 +110,7 @@ class TrackPointer {
 
   private:
     std::shared_ptr<Track> m_shared_ptr;
-    void (*m_saver)(std::shared_ptr<Track>);
+    void (*m_saver)(std::weak_ptr<Track>);
 };
 
 inline bool operator==(const TrackPointer& a, nullptr_t) {

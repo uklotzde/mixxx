@@ -188,14 +188,14 @@ void GlobalTrackCache::destroyInstance() {
 }
 
 //static
-void GlobalTrackCache::saver(std::shared_ptr<Track> pTrack) {
+void GlobalTrackCache::saver(std::weak_ptr<Track> pTrack) {
     if (s_pInstance) {
         s_pInstance->evictAndSave(pTrack);
     } else {
         // Simply omit saving when the cache is no
         // longer available. This might but should not happen.
         kLogger.warning()
-                << "Omit saving uncached track" << pTrack->getCanonicalLocation();
+                << "Omit saving uncached track";
     }
 }
 
@@ -532,21 +532,21 @@ void GlobalTrackCache::afterEvicted(
 }
 
 bool GlobalTrackCache::evictAndSave(
-        std::shared_ptr<Track> sharedPtr) {
-    DEBUG_ASSERT(sharedPtr);
+        std::weak_ptr<Track> weakPtr) {
     GlobalTrackCacheLocker cacheLocker;
 
     // While saving only a single owner is allowed to
     // guarantee exclusive access to the track and the
     // corresponding file.
-    kLogger.debug() << "Saving track with use_count" << sharedPtr.use_count();
-    if (sharedPtr.use_count() != 1) {
+    int use_count = weakPtr.use_count();
+    kLogger.debug() << "Saving track with use_count" << use_count;
+    if (use_count != 1) {
         // we must have handed out a TrackPointer in the meantime
         return false;
     }
     evictAndSave(
             &cacheLocker,
-            sharedPtr);
+            weakPtr.lock());
     return true;
 }
 

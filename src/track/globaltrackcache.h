@@ -150,7 +150,7 @@ private:
 
     // Callback for the smart-pointer
     static void deleter(Track* plainPtr);
-    static void saver(std::shared_ptr<Track> pTrack);
+    static void saver(std::weak_ptr<Track> pTrack);
 
     explicit GlobalTrackCache(GlobalTrackCacheEvictor* pEvictor);
     ~GlobalTrackCache();
@@ -181,7 +181,7 @@ private:
             TrackId trackId);
 
     bool evictAndSave(
-            std::shared_ptr<Track> sharedPtr);
+            std::weak_ptr<Track> sharedPtr);
 
     void evictAndSave(
             GlobalTrackCacheLocker* pCacheLocker,
