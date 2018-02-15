@@ -69,6 +69,7 @@ Track::Track(
           m_qMutex(QMutex::Recursive),
           m_record(trackId),
           m_bDirty(false),
+          m_useCount(0),
           m_bMarkedForMetadataExport(false),
           m_analyzerProgress(-1) {
     if (kLogStats && kLogger.debugEnabled()) {
@@ -100,7 +101,7 @@ TrackPointer Track::newTemporary(
         const SecurityTokenPointer& pSecurityToken) {
     return TrackPointer(std::make_shared<Track>(
             fileInfo,
-            pSecurityToken));
+            pSecurityToken), nullptr);
 }
 
 //static
@@ -110,7 +111,7 @@ TrackPointer Track::newDummy(
     return TrackPointer(std::make_shared<Track>(
             fileInfo,
             SecurityTokenPointer(),
-            trackId));
+            trackId), nullptr);
 }
 
 void Track::setTrackMetadata(
@@ -850,6 +851,13 @@ bool Track::isDirty() {
     return m_bDirty;
 }
 
+int Track::addUse() {
+    return m_useCount.fetchAndAddAcquire(1);
+}
+
+int Track::removeUse() {
+    return m_useCount.fetchAndAddRelease(-1);
+}
 
 void Track::markForMetadataExport() {
     QMutexLocker lock(&m_qMutex);
@@ -1079,4 +1087,36 @@ Track::ExportMetadataResult Track::exportMetadata(
                 << getLocation();
         return ExportMetadataResult::Failed;
     }
+}
+
+TrackPointer::TrackPointer(const TrackWeakPointer& pTrack,
+        void (*saver)(Track*))
+    : m_shared_ptr(pTrack.lock()),
+      m_saver(saver) {
+    if (m_shared_ptr) {
+        m_shared_ptr->addUse();
+    }
+}
+
+TrackPointer::TrackPointer(Track* pTrack, void (*saver)(Track*),
+        void (*deleter)(Track*))
+    : m_shared_ptr(pTrack, deleter),
+      m_saver(saver) {
+    // reserved for GlobalTrackCache
+    if (m_shared_ptr) {
+        m_shared_ptr->addUse();
+    }
+}
+
+TrackPointer::TrackPointer(const TrackPointer& pTrack)
+    : m_shared_ptr(pTrack.m_shared_ptr),
+      m_saver(pTrack.m_saver) {
+    if (m_shared_ptr) {
+        m_shared_ptr->addUse();
+    }
+}
+
+TrackPointer::TrackPointer(TrackPointer&& other)
+    : m_shared_ptr(std::move(other.m_shared_ptr)),
+      m_saver(other.m_saver) {
 }

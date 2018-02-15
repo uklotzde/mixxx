@@ -188,11 +188,14 @@ void GlobalTrackCache::destroyInstance() {
 }
 
 //static
-void GlobalTrackCache::saver(std::weak_ptr<Track> pTrack) {
+void GlobalTrackCache::saver(Track* pTrack) {
+    if (!pTrack) {
+        return;
+    }
     if (s_pInstance) {
-        s_pInstance->evictAndSave(pTrack);
-    } else {
-        // Simply omit saving when the cache is no
+        s_pInstance->evictAndSaveIfLast(pTrack);
+    } else if (pTrack->removeUse() == 1) {
+        // We are the last user. Simply omit saving when the cache is no
         // longer available. This might but should not happen.
         kLogger.warning()
                 << "Omit saving uncached track";
@@ -221,8 +224,8 @@ bool GlobalTrackCache::verifyConsistency() {
     {
         TracksById::iterator i = m_tracksById.begin();
         while (i != m_tracksById.end()) {
-            const TrackPointer strongPtr = (*i).second.lock();
-            if (!strongPtr) {
+            const std::shared_ptr<Track> strongPtr = (*i).second.lock();
+            VERIFY_OR_DEBUG_ASSERT(strongPtr) {
                 i = m_tracksById.erase(i);
                 continue;
             }
@@ -254,8 +257,8 @@ bool GlobalTrackCache::verifyConsistency() {
     {
         TracksByCanonicalLocation::iterator i = m_tracksByCanonicalLocation.begin();
         while (i != m_tracksByCanonicalLocation.end()) {
-            const TrackPointer strongPtr = (*i).second.lock();
-            if (!strongPtr) {
+            const std::shared_ptr<Track> strongPtr = (*i).second.lock();
+            VERIFY_OR_DEBUG_ASSERT(strongPtr) {
                 i = m_tracksByCanonicalLocation.erase(i);
                 continue;
             }
@@ -291,12 +294,12 @@ void GlobalTrackCache::deactivate() {
     while (!m_tracksById.empty()) {
         evictAndSave(
                 nullptr,
-                m_tracksById.begin()->second.lock());
+                m_tracksById.begin()->second.lock().get());
     }
     while (!m_tracksByCanonicalLocation.empty()) {
         evictAndSave(
                 nullptr,
-                m_tracksByCanonicalLocation.begin()->second.lock());
+                m_tracksByCanonicalLocation.begin()->second.lock().get());
     }
     m_pEvictor = nullptr;
 }
@@ -314,12 +317,12 @@ TrackPointer GlobalTrackCache::lookupById(
     const auto trackById(m_tracksById.find(trackId));
     if (m_tracksById.end() != trackById) {
         // Cache hit
-        TrackPointer strongPtr = (*trackById).second.lock();
-        if (!strongPtr) {
+        TrackPointer strongPtr(trackById->second.lock(), saver);
+        VERIFY_OR_DEBUG_ASSERT(strongPtr) {
             m_tracksById.erase(trackById);
         } else {
             if (traceLogEnabled()) {
-                kLogger.trace()
+                qDebug()
                         << "Cache hit for"
                         << trackId
                         << strongPtr.get();
@@ -347,8 +350,8 @@ TrackPointer GlobalTrackCache::lookupByRef(
                 m_tracksByCanonicalLocation.find(canonicalLocation));
         if (m_tracksByCanonicalLocation.end() != trackByCanonicalLocation) {
             // Cache hit
-            TrackPointer strongPtr = (*trackByCanonicalLocation).second.lock();
-            if (!strongPtr) {
+            TrackPointer strongPtr(trackByCanonicalLocation->second.lock(), saver);
+            VERIFY_OR_DEBUG_ASSERT(strongPtr) {
                 m_tracksByCanonicalLocation.erase(trackByCanonicalLocation);
             } else {
                 if (traceLogEnabled()) {
@@ -531,56 +534,57 @@ void GlobalTrackCache::afterEvicted(
     // callback!!
 }
 
-bool GlobalTrackCache::evictAndSave(
-        std::weak_ptr<Track> weakPtr) {
+bool GlobalTrackCache::evictAndSaveIfLast(
+        Track* pTrack) {
     GlobalTrackCacheLocker cacheLocker;
 
     // While saving only a single owner is allowed to
     // guarantee exclusive access to the track and the
     // corresponding file.
-    int use_count = weakPtr.use_count();
+
+    int use_count = pTrack->removeUse();
     kLogger.debug() << "Saving track with use_count" << use_count;
     if (use_count != 1) {
-        // we must have handed out a TrackPointer in the meantime
+        // we are not the last user, skip saving
         return false;
     }
     evictAndSave(
             &cacheLocker,
-            weakPtr.lock());
+            pTrack);
     return true;
 }
 
 void GlobalTrackCache::evictAndSave(
         GlobalTrackCacheLocker* pCacheLocker,
-        std::shared_ptr<Track> sharedPtr) {
-    DEBUG_ASSERT(sharedPtr);
-    const auto trackRef = createTrackRef(*sharedPtr);
+        Track* pTrack) {
+    DEBUG_ASSERT(pTrack);
+    const auto trackRef = createTrackRef(*pTrack);
     if (debugLogEnabled()) {
         kLogger.debug()
                 << "Evicting indexed track"
                 << trackRef
-                << sharedPtr.get();
+                << pTrack;
     }
 
-    evict(trackRef, sharedPtr);
+    evict(trackRef, pTrack);
     DEBUG_ASSERT(verifyConsistency());
     // The evicted entry must not be accessible anymore!
     DEBUG_ASSERT(!lookupByRef(trackRef));
-    afterEvicted(pCacheLocker, sharedPtr.get());
+    afterEvicted(pCacheLocker, pTrack);
     // After returning from the callback the lock might have
     // already been released!
     if (debugLogEnabled()) {
         kLogger.debug()
                 << "Deleting evicted track"
                 << trackRef
-                << sharedPtr.get();
+                << pTrack;
     }
 }
 
 void GlobalTrackCache::evict(
         const TrackRef& trackRef,
-        std::shared_ptr<Track> sharedPtr) {
-    DEBUG_ASSERT(sharedPtr);
+        Track* pTrack) {
+    DEBUG_ASSERT(pTrack);
     if (trackRef.hasId()) {
         const auto trackById = m_tracksById.find(trackRef.getId());
         if (trackById != m_tracksById.end()) {

@@ -27,31 +27,11 @@ class TrackPointer {
         : m_saver(nullptr) {
     }
     TrackPointer(const TrackWeakPointer& pTrack,
-            void (*saver)(std::weak_ptr<Track>))
-        : m_shared_ptr(pTrack.lock()),
-          m_saver(saver) {
-    }
-    TrackPointer(const std::shared_ptr<Track>& pTrack)
-        : m_shared_ptr(pTrack),
-          m_saver(nullptr) {
-    }
-    TrackPointer(Track* pTrack, void (*saver)(std::weak_ptr<Track>),
-            void (*deleter)(Track*))
-        : m_shared_ptr(pTrack, deleter),
-          m_saver(saver) {
-        // reserved for GlobalTrackCache
-    }
-    TrackPointer(const TrackPointer&) = default;
-#if !defined(_MSC_VER) || _MSC_VER > 1900
-    //TrackPointer(TrackPointer&&) = default;
-    TrackPointer(TrackPointer&& other) = default;
-#else
-    // Workaround for Visual Studio 2015 (and before)
-    excplicit TrackPointer(TrackPointer&& other)
-        : m_shared_ptr(std::move(other.m_shared_ptr))
-          m_saver(other.m_saver) {
-    }
-#endif
+            void (*saver)(Track*));
+    TrackPointer(Track* pTrack, void (*saver)(Track*),
+            void (*deleter)(Track*));
+    TrackPointer(const TrackPointer&);
+    TrackPointer(TrackPointer&& other);
 
     TrackPointer& operator=(const TrackPointer& other) {
         TrackPointer(other).swap(*this);
@@ -64,13 +44,8 @@ class TrackPointer {
     }
 
     ~TrackPointer() {
-        if (m_saver &&  m_shared_ptr.use_count() == 1) {
-            m_saver(m_shared_ptr);
-            // While saving only a single owner is allowed to guarantee
-            // exclusive access to the track and the corresponding file.
-            // After returning from the save operation this condition
-            // must still hold.
-            DEBUG_ASSERT(m_shared_ptr.use_count() == 1);
+        if (m_saver) {
+            m_saver(m_shared_ptr.get());
         }
         // here ~shared_ptr of  m_shared_ptr is called
     }
@@ -110,7 +85,7 @@ class TrackPointer {
 
   private:
     std::shared_ptr<Track> m_shared_ptr;
-    void (*m_saver)(std::weak_ptr<Track>);
+    void (*m_saver)(Track*);
 };
 
 inline bool operator==(const TrackPointer& a, nullptr_t) {
@@ -367,6 +342,9 @@ class Track : public QObject {
 
     bool isDirty();
 
+    int addUse();
+    int removeUse();
+
     // Get the track's Beats list
     BeatsPointer getBeats() const;
 
@@ -472,6 +450,10 @@ class Track : public QObject {
     // Flag that indicates whether or not the TIO has changed. This is used by
     // TrackDAO to determine whether or not to write the Track back.
     bool m_bDirty;
+
+    // Second flag in addition to the TrackPointer use count, that is used
+    // to call the saver during the TrackPointer destructor
+    QAtomicInt m_useCount;
 
     // Flag indicating that the user has explicitly requested to save
     // the metadata.
