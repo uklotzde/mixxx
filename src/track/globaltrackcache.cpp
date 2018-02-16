@@ -543,7 +543,7 @@ bool GlobalTrackCache::evictAndSaveIfLast(
     // corresponding file.
 
     int use_count = pTrack->removeUse();
-    kLogger.debug() << "Saving track with use_count" << use_count;
+    //kLogger.debug() << "Saving track with use_count" << use_count;
     if (use_count != 1) {
         // we are not the last user, skip saving
         return false;
