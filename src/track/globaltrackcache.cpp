@@ -557,6 +557,11 @@ bool GlobalTrackCache::evictAndSaveIfLast(
 void GlobalTrackCache::evictAndSave(
         GlobalTrackCacheLocker* pCacheLocker,
         Track* pTrack) {
+    if (!m_pEvictor) {
+        // cache is already disabled
+        return;
+    }
+
     DEBUG_ASSERT(pTrack);
     const auto trackRef = createTrackRef(*pTrack);
     if (debugLogEnabled()) {
