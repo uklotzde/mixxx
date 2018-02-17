@@ -1093,7 +1093,7 @@ TrackPointer::TrackPointer(const TrackWeakPointer& pTrack,
         void (*saver)(Track*))
     : m_shared_ptr(pTrack.lock()),
       m_saver(saver) {
-    if (m_shared_ptr) {
+    if (m_shared_ptr && m_saver) {
         m_shared_ptr->addUse();
     }
 }
@@ -1103,7 +1103,7 @@ TrackPointer::TrackPointer(Track* pTrack, void (*saver)(Track*),
     : m_shared_ptr(pTrack, deleter),
       m_saver(saver) {
     // reserved for GlobalTrackCache
-    if (m_shared_ptr) {
+    if (m_shared_ptr && m_saver) {
         m_shared_ptr->addUse();
     }
 }
@@ -1111,7 +1111,7 @@ TrackPointer::TrackPointer(Track* pTrack, void (*saver)(Track*),
 TrackPointer::TrackPointer(const TrackPointer& pTrack)
     : m_shared_ptr(pTrack.m_shared_ptr),
       m_saver(pTrack.m_saver) {
-    if (m_shared_ptr) {
+    if (m_shared_ptr && m_saver) {
         m_shared_ptr->addUse();
     }
 }
