@@ -170,6 +170,8 @@ TEST_F(GlobalTrackCacheTest, concurrentDelete) {
     workerThread.stop();
     workerThread.wait();
 
+    QCoreApplication::processEvents();
+
     EXPECT_TRUE(GlobalTrackCacheLocker().isEmpty());
 }
 
