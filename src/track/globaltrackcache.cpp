@@ -195,10 +195,13 @@ void GlobalTrackCache::saver(TrackUseTracked* pTrack) {
     if (s_pInstance) {
         s_pInstance->evictAndSaveIfLast(pTrack);
     } else if (pTrack->removeUse() == 1) {
-        // We are the last user. Simply omit saving when the cache is no
-        // longer available. This might but should not happen.
-        kLogger.warning()
-                << "Omit saving uncached track";
+        VERIFY_OR_DEBUG_ASSERT(!pTrack->isDirty()) {
+            // We are the last user. Simply omit saving when the cache is no
+            // longer available. This should not happen.
+            kLogger.warning()
+                    << "Omit saving uncached track"
+                    << pTrack->getCanonicalLocation();
+        }
     }
 }
 
