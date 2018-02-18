@@ -1092,6 +1092,12 @@ TrackUseTracked::TrackUseTracked(const QFileInfo& fileInfo,
 TrackUseTracked::~TrackUseTracked() {
 }
 
+void TrackUseTracked::releaseReference(TrackPointer pTrack) {
+    Q_UNUSED(pTrack);
+    // pTrack is released here
+    // this is used to do this from tha main thread.
+}
+
 TrackPointer::TrackPointer(const TrackWeakPointer& pTrack)
     : m_shared_ptr(pTrack.lock()) {
     if (m_shared_ptr) {

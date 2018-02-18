@@ -148,7 +148,7 @@ private:
     friend class GlobalTrackCacheLocker;
     friend class GlobalTrackCacheResolver;
 
-    // Callback for the smart-pointer
+    // Callbacks for the smart-pointer
     static void deleter(TrackUseTracked* plainPtr);
     static void saver(TrackUseTracked* pTrack);
 

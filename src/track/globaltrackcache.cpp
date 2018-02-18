@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QThread>
+#include <QMetaObject>
 
 #include "util/assert.h"
 #include "util/logger.h"
@@ -552,9 +553,16 @@ bool GlobalTrackCache::evictAndSaveIfLast(
         // we are not the last user, skip saving
         return false;
     }
-    evictAndSave(
-            &cacheLocker,
-            pTrack);
+    if (QApplication::instance()->thread() == QThread::currentThread()) {
+        evictAndSave(&cacheLocker, pTrack);
+    } else {
+        auto strongPtr = lookupById(pTrack->getId()); // use_count is back to 1 here.
+        cacheLocker.unlockCache();
+        // Call this again from the main thread
+        QMetaObject::invokeMethod(pTrack, "releaseReference",
+                                  Qt::QueuedConnection,
+                                  Q_ARG(TrackPointer, std::move(strongPtr)));
+    }
     return true;
 }
 

@@ -426,6 +426,10 @@ class TrackUseTracked : public Track {
         }
     }
 
+  public slots:
+    void releaseReference(TrackPointer pTrack);
+
+
   private:
     // Second flag in addition to the TrackPointer use count, that is used
     // to call the saver during the TrackPointer destructor
