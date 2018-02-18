@@ -17,93 +17,8 @@
 
 
 // forward declaration(s)
-class Track;
-
-typedef std::weak_ptr<Track> TrackWeakPointer;
-
-class TrackPointer {
-  public:
-    TrackPointer()
-        : m_saver(nullptr) {
-    }
-    TrackPointer(const TrackWeakPointer& pTrack,
-            void (*saver)(Track*));
-    TrackPointer(Track* pTrack, void (*saver)(Track*),
-            void (*deleter)(Track*));
-    TrackPointer(const TrackPointer&);
-    TrackPointer(TrackPointer&& other);
-
-    TrackPointer& operator=(const TrackPointer& other) {
-        TrackPointer(other).swap(*this);
-        return *this;
-    }
-
-    TrackPointer& operator=(TrackPointer&& other) {
-        TrackPointer(std::move(other)).swap(*this);
-        return *this;
-    }
-
-    ~TrackPointer() {
-        if (m_saver) {
-            m_saver(m_shared_ptr.get());
-        }
-        // here ~shared_ptr of  m_shared_ptr is called
-    }
-
-    Track& operator*() const {
-        return *(m_shared_ptr.get());
-    }
-
-    Track* operator->() const {
-        return m_shared_ptr.get();
-    }
-
-    Track* get() const {
-        return m_shared_ptr.get();
-    }
-
-    explicit operator bool() const {
-        return (m_shared_ptr.get() != nullptr);
-    }
-
-    explicit operator TrackWeakPointer() const{
-        return TrackWeakPointer(m_shared_ptr);
-    }
-
-    void reset() {
-        TrackPointer().swap(*this);
-    }
-
-    void swap(TrackPointer& other) {
-        m_shared_ptr.swap(other.m_shared_ptr);
-        std::swap(m_saver, other.m_saver);
-    }
-
-    long use_count() const {
-        return m_shared_ptr.use_count();
-    }
-
-  private:
-    std::shared_ptr<Track> m_shared_ptr;
-    void (*m_saver)(Track*);
-};
-
-inline bool operator==(const TrackPointer& a, nullptr_t) {
-    return !a;
-}
-
-inline bool operator==(const TrackPointer& a, const TrackPointer& b) {
-    return a.get() == b.get();
-}
-
-
-inline bool operator!=(const TrackPointer& a, nullptr_t) {
-    return a.get() != nullptr;
-}
-
-inline bool operator!=(const TrackPointer& a, const TrackPointer& b) {
-    return a.get() != b.get();
-}
+class TrackUseTracked;
+class TrackPointer;
 
 class Track : public QObject {
     Q_OBJECT
@@ -342,9 +257,6 @@ class Track : public QObject {
 
     bool isDirty();
 
-    int addUse();
-    int removeUse();
-
     // Get the track's Beats list
     BeatsPointer getBeats() const;
 
@@ -476,3 +388,125 @@ class Track : public QObject {
     friend class GlobalTrackCacheResolver;
     friend class SoundSourceProxy;
 };
+
+class TrackUseTracked : public Track {
+    Q_OBJECT
+
+  public:
+    TrackUseTracked(const QFileInfo& fileInfo,
+          const SecurityTokenPointer& pSecurityToken,
+          TrackId trackId = TrackId(),
+          void (*saver)(TrackUseTracked*) = nullptr);
+    TrackUseTracked(const TrackUseTracked&) = delete;
+    ~TrackUseTracked() override;
+
+    int addUse() {
+        int old = 0;
+        if (m_saver) {
+            old = m_useCount.fetchAndAddAcquire(1);
+        }
+        return old;
+    }
+
+    int removeUse() {
+        int old = 0;
+        if (m_saver) {
+            old = m_useCount.fetchAndAddAcquire(-1);
+        }
+        return old;
+    }
+
+    int getUse() {
+        return m_useCount;
+    }
+
+    void save() {
+        if (m_saver) {
+            m_saver(this);
+        }
+    }
+
+  private:
+    // Second flag in addition to the TrackPointer use count, that is used
+    // to call the saver during the TrackPointer destructor
+    QAtomicInt m_useCount;
+    void (*m_saver)(TrackUseTracked*);
+};
+
+typedef std::weak_ptr<TrackUseTracked> TrackWeakPointer;
+
+class TrackPointer {
+  public:
+    TrackPointer() {
+    }
+    TrackPointer(TrackUseTracked* pTrack,
+            void (*deleter)(TrackUseTracked*));
+    TrackPointer(const TrackWeakPointer& pTrack);
+    TrackPointer(const TrackPointer&);
+    TrackPointer(TrackPointer&& other);
+
+    ~TrackPointer();
+
+    TrackPointer& operator=(const TrackPointer& other) {
+        TrackPointer(other).swap(*this);
+        return *this;
+    }
+
+    TrackPointer& operator=(TrackPointer&& other) {
+        TrackPointer(std::move(other)).swap(*this);
+        return *this;
+    }
+
+    Track& operator*() const {
+        return *(static_cast<Track*>(m_shared_ptr.get()));
+    }
+
+    Track* operator->() const {
+        return static_cast<Track*>(m_shared_ptr.get());
+    }
+
+    Track* get() const {
+        return static_cast<Track*>(m_shared_ptr.get());
+    }
+
+    explicit operator bool() const {
+        return (m_shared_ptr.get() != nullptr);
+    }
+
+    explicit operator TrackWeakPointer() const{
+        return TrackWeakPointer(m_shared_ptr);
+    }
+
+    void reset() {
+        TrackPointer().swap(*this);
+    }
+
+    void swap(TrackPointer& other) {
+        m_shared_ptr.swap(other.m_shared_ptr);
+    }
+
+    long use_count() const {
+        return m_shared_ptr.use_count();
+    }
+
+  private:
+    std::shared_ptr<TrackUseTracked> m_shared_ptr;
+};
+
+inline bool operator==(const TrackPointer& a, nullptr_t) {
+    return !a;
+}
+
+inline bool operator==(const TrackPointer& a, const TrackPointer& b) {
+    return a.get() == b.get();
+}
+
+
+inline bool operator!=(const TrackPointer& a, nullptr_t) {
+    return a.get() != nullptr;
+}
+
+inline bool operator!=(const TrackPointer& a, const TrackPointer& b) {
+    return a.get() != b.get();
+}
+

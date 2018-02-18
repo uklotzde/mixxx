@@ -188,7 +188,7 @@ void GlobalTrackCache::destroyInstance() {
 }
 
 //static
-void GlobalTrackCache::saver(Track* pTrack) {
+void GlobalTrackCache::saver(TrackUseTracked* pTrack) {
     if (!pTrack) {
         return;
     }
@@ -203,7 +203,7 @@ void GlobalTrackCache::saver(Track* pTrack) {
 }
 
 //static
-void GlobalTrackCache::deleter(Track* plainPtr) {
+void GlobalTrackCache::deleter(TrackUseTracked* plainPtr) {
     DEBUG_ASSERT(plainPtr);
     deleteTrack(plainPtr);
 }
@@ -317,7 +317,7 @@ TrackPointer GlobalTrackCache::lookupById(
     const auto trackById(m_tracksById.find(trackId));
     if (m_tracksById.end() != trackById) {
         // Cache hit
-        TrackPointer strongPtr(trackById->second.lock(), saver);
+        TrackPointer strongPtr(trackById->second);
         VERIFY_OR_DEBUG_ASSERT(strongPtr) {
             m_tracksById.erase(trackById);
         } else {
@@ -350,7 +350,7 @@ TrackPointer GlobalTrackCache::lookupByRef(
                 m_tracksByCanonicalLocation.find(canonicalLocation));
         if (m_tracksByCanonicalLocation.end() != trackByCanonicalLocation) {
             // Cache hit
-            TrackPointer strongPtr(trackByCanonicalLocation->second.lock(), saver);
+            TrackPointer strongPtr(trackByCanonicalLocation->second);
             VERIFY_OR_DEBUG_ASSERT(strongPtr) {
                 m_tracksByCanonicalLocation.erase(trackByCanonicalLocation);
             } else {
@@ -444,11 +444,12 @@ void GlobalTrackCache::resolve(
                 << trackRef;
     }
     auto strongPtr = TrackPointer(
-            new Track(
+            new TrackUseTracked(
                     std::move(fileInfo),
                     std::move(pSecurityToken),
-                    std::move(trackId)),
-            saver, deleter);
+                    std::move(trackId),
+                    saver),
+            deleter);
     // Track objects live together with the cache on the main thread
     // and will be deleted later within the event loop. But this
     // function might be called from any thread, even from worker
@@ -535,7 +536,7 @@ void GlobalTrackCache::afterEvicted(
 }
 
 bool GlobalTrackCache::evictAndSaveIfLast(
-        Track* pTrack) {
+        TrackUseTracked* pTrack) {
     GlobalTrackCacheLocker cacheLocker;
 
     // While saving only a single owner is allowed to

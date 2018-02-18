@@ -149,8 +149,8 @@ private:
     friend class GlobalTrackCacheResolver;
 
     // Callback for the smart-pointer
-    static void deleter(Track* plainPtr);
-    static void saver(Track* pTrack);
+    static void deleter(TrackUseTracked* plainPtr);
+    static void saver(TrackUseTracked* pTrack);
 
     explicit GlobalTrackCache(GlobalTrackCacheEvictor* pEvictor);
     ~GlobalTrackCache();
@@ -180,7 +180,7 @@ private:
             TrackRef trackRef,
             TrackId trackId);
 
-    bool evictAndSaveIfLast(Track* pTrack);
+    bool evictAndSaveIfLast(TrackUseTracked* pTrack);
 
     void evictAndSave(
             GlobalTrackCacheLocker* pCacheLocker,

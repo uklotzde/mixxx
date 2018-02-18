@@ -99,19 +99,19 @@ Track::~Track() {
 TrackPointer Track::newTemporary(
         const QFileInfo& fileInfo,
         const SecurityTokenPointer& pSecurityToken) {
-    return TrackPointer(std::make_shared<Track>(
+    return TrackPointer(std::make_shared<TrackUseTracked>(
             fileInfo,
-            pSecurityToken), nullptr);
+            pSecurityToken));
 }
 
 //static
 TrackPointer Track::newDummy(
         const QFileInfo& fileInfo,
         TrackId trackId) {
-    return TrackPointer(std::make_shared<Track>(
+    return TrackPointer(std::make_shared<TrackUseTracked>(
             fileInfo,
             SecurityTokenPointer(),
-            trackId), nullptr);
+            trackId));
 }
 
 void Track::setTrackMetadata(
@@ -851,14 +851,6 @@ bool Track::isDirty() {
     return m_bDirty;
 }
 
-int Track::addUse() {
-    return m_useCount.fetchAndAddAcquire(1);
-}
-
-int Track::removeUse() {
-    return m_useCount.fetchAndAddRelease(-1);
-}
-
 void Track::markForMetadataExport() {
     QMutexLocker lock(&m_qMutex);
     if (compareAndSet(&m_bMarkedForMetadataExport, true)) {
@@ -1089,34 +1081,47 @@ Track::ExportMetadataResult Track::exportMetadata(
     }
 }
 
-TrackPointer::TrackPointer(const TrackWeakPointer& pTrack,
-        void (*saver)(Track*))
-    : m_shared_ptr(pTrack.lock()),
+TrackUseTracked::TrackUseTracked(const QFileInfo& fileInfo,
+      const SecurityTokenPointer& pSecurityToken,
+      TrackId trackId,
+      void (*saver)(TrackUseTracked*))
+    : Track(fileInfo, pSecurityToken, trackId) ,
       m_saver(saver) {
-    if (m_shared_ptr && m_saver) {
+}
+
+TrackUseTracked::~TrackUseTracked() {
+}
+
+TrackPointer::TrackPointer(const TrackWeakPointer& pTrack)
+    : m_shared_ptr(pTrack.lock()) {
+    if (m_shared_ptr) {
         m_shared_ptr->addUse();
     }
 }
 
-TrackPointer::TrackPointer(Track* pTrack, void (*saver)(Track*),
-        void (*deleter)(Track*))
-    : m_shared_ptr(pTrack, deleter),
-      m_saver(saver) {
+TrackPointer::TrackPointer(TrackUseTracked* pTrack,
+        void (*deleter)(TrackUseTracked*))
+    : m_shared_ptr(pTrack, deleter) {
     // reserved for GlobalTrackCache
-    if (m_shared_ptr && m_saver) {
+    if (m_shared_ptr) {
         m_shared_ptr->addUse();
     }
 }
 
 TrackPointer::TrackPointer(const TrackPointer& pTrack)
-    : m_shared_ptr(pTrack.m_shared_ptr),
-      m_saver(pTrack.m_saver) {
-    if (m_shared_ptr && m_saver) {
+    : m_shared_ptr(pTrack.m_shared_ptr) {
+    if (m_shared_ptr) {
         m_shared_ptr->addUse();
     }
 }
 
 TrackPointer::TrackPointer(TrackPointer&& other)
-    : m_shared_ptr(std::move(other.m_shared_ptr)),
-      m_saver(other.m_saver) {
+    : m_shared_ptr(std::move(other.m_shared_ptr)) {
+}
+
+TrackPointer::~TrackPointer() {
+    if (m_shared_ptr) {
+        m_shared_ptr->save();
+    }
+    // here ~shared_ptr of  m_shared_ptr is called
 }
