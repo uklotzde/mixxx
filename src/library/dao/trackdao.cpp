@@ -213,7 +213,10 @@ void TrackDAO::saveTrack(GlobalTrackCacheLocker* pCacheLocker, Track* pTrack) {
         // Unlocking the cache now reduces lock contention and keeps the
         // UI as responsive as possible.
         if (pCacheLocker) {
-            pCacheLocker->unlockCache();
+            // Unlocking is disabled here, because there is a risk of
+            // loosing user data if a new track is populated with the old values
+            // before new values are stored.
+            //pCacheLocker->unlockCache();
         }
 
         // Only update the database if the track has already been added!
