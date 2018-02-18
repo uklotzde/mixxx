@@ -11,6 +11,7 @@
 #include "track/beatfactory.h"
 #include "track/keyfactory.h"
 #include "track/keyutils.h"
+#include "track/globaltrackcache.h"
 #include "util/duration.h"
 
 const int kFilterLength = 80;
@@ -622,7 +623,10 @@ void DlgTrackInfo::slotImportMetadataFromFile() {
                 m_pLoadedTrack->getFileInfo(),
                 m_pLoadedTrack->getSecurityToken());
         if (pTrack) {
-            SoundSourceProxy(pTrack).updateTrackFromSource();
+            {
+                GlobalTrackCacheLocker cacheLocker; // Lock cache to avoid concurrent saving
+                SoundSourceProxy(pTrack).updateTrackFromSource();
+            }
             populateFields(*pTrack);
         }
     }

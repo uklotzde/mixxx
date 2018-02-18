@@ -11,6 +11,7 @@
 
 #include "sources/soundsourceproxy.h"
 #include "util/trace.h"
+#include "track/globaltrackcache.h"
 
 
 QWeakPointer<BrowseThread> BrowseThread::m_weakInstanceRef;
@@ -164,7 +165,10 @@ void BrowseThread::populateModel() {
             // each file.
             TrackPointer pTrack = Track::newTemporary(filepath, thisPath.token());
             // Update the track object by (re-)importing metadata from the file
-            SoundSourceProxy(pTrack).updateTrackFromSource();
+            {
+                GlobalTrackCacheLocker cacheLocker; // Lock cache to avoid concurrent saving
+                SoundSourceProxy(pTrack).updateTrackFromSource();
+            }
 
             item = new QStandardItem(pTrack->getFileName());
             item->setToolTip(item->text());

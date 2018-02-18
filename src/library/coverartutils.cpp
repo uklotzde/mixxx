@@ -5,6 +5,7 @@
 
 #include "sources/soundsourceproxy.h"
 #include "util/regex.h"
+#include "track/globaltrackcache.h"
 
 
 //static
@@ -38,6 +39,7 @@ QImage CoverArtUtils::extractEmbeddedCover(
         const QFileInfo& fileInfo,
         SecurityTokenPointer pToken) {
     auto pTrack = Track::newTemporary(fileInfo, pToken);
+    GlobalTrackCacheLocker cacheLocker; // Lock cache to avoid concurrent saving
     return SoundSourceProxy(pTrack).importCoverImage();
 }
 
