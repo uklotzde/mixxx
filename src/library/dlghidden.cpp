@@ -11,7 +11,7 @@ DlgHidden::DlgHidden(QWidget* parent, UserSettingsPointer pConfig,
          : QWidget(parent),
            Ui::DlgHidden(),
            m_pTrackTableView(
-               new WTrackTableView(this, pConfig, pTrackCollection, false)) {
+               new WTrackTableView(this, pConfig, pTrackCollection)) {
     setupUi(this);
     m_pTrackTableView->installEventFilter(pKeyboard);
 
