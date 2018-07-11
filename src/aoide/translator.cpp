@@ -4,8 +4,6 @@
 #include <QTextStream>
 
 #include "analyzer/analyzerebur128.h"
-#include <sstream>
-
 #include "library/starrating.h"
 #include "track/track.h"
 #include "util/logger.h"
@@ -189,11 +187,13 @@ AoideTrack Translator::exportTrack(const Track& track) const {
                 position = trackRecord.getCuePoint();
                 length = 0;
                 if (position != cuePoint->getPosition()) {
-                    std::ostringstream oss;
-                    oss.precision(std::numeric_limits<double>::max_digits10);
-                    oss << "Load cue differs from track cue position:"
-                        << " expected = " << position << ", actual = " << cuePoint->getPosition();
-                    kLogger.warning() << oss.str().c_str();
+                    QString msg;
+                    QTextStream ts(&msg);
+                    ts << qSetRealNumberPrecision(std::numeric_limits<double>::max_digits10)
+                            << "Load cue differs from track cue position"
+                            << ": expected = " << position
+                            << ", actual = " << cuePoint->getPosition();
+                    kLogger.warning() << msg.toLocal8Bit().data();
                 }
                 mark = "load-cue";
                 hasLoadCue = true;
