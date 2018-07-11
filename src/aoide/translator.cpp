@@ -3,6 +3,7 @@
 #include <QMimeDatabase>
 #include <QTextStream>
 
+#include "analyzer/analyzerebur128.h"
 #include <sstream>
 
 #include "library/starrating.h"
@@ -128,8 +129,10 @@ AoideTrack Translator::exportTrack(const Track& track) const {
     audioContent.setBitRateBps(track.getBitrate() * 1000);
     if (trackInfo.getReplayGain().hasRatio()) {
         // Assumption: Gain has been calculated with the new EBU R128 algorithm
+        const double gainDb = ratio2db(trackInfo.getReplayGain().getRatio());
+        const double ebuR128Lufs =  AnalyzerEbur128::kReplayGain2ReferenceLUFS - gainDb;
         AoideLoudness loudness;
-        loudness.setEbuR128LufsDb(ratio2db(trackInfo.getReplayGain().getRatio()));
+        loudness.setEbuR128Lufs(ebuR128Lufs);
         audioContent.setLoudness(std::move(loudness));
     }
 
