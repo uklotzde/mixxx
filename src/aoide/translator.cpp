@@ -229,7 +229,7 @@ AoideTrack Translator::exportTrack(const Track& track) const {
         // Don't rely solely on load cues that might be absent
         QJsonObject trackMarker;
         trackMarker.insert("mark", "load-cue");
-        trackMarker.insert("offsetMs", trackRecord.getCuePoint() * scaleCueToMillis);
+        trackMarker.insert("offset", QJsonObject{{ "ms", trackRecord.getCuePoint() * scaleCueToMillis}});
         trackMarkers += std::move(trackMarker);
     }
     insertOptional(&jsonTrack, "markers", std::move(trackMarkers));
