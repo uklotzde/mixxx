@@ -128,11 +128,10 @@ AoideTrack Translator::exportTrack(const Track& track) const {
     if (trackInfo.getReplayGain().hasRatio()) {
         // Assumption: Gain has been calculated with the new EBU R128 algorithm.
         const double referenceGainDb = ratio2db(trackInfo.getReplayGain().getRatio());
-        // We need to normalize the gain for the official target level of -23 LUFS
-        // that might differ from the reference level used by Mixxx!
-        const double ebuR128GainDb = referenceGainDb + (-23 - AnalyzerEbur128::kReplayGain2ReferenceLUFS);
+        // Reconstruct the LUFS value from the relative gain
+        const double ebuR128Lufs = AnalyzerEbur128::kReplayGain2ReferenceLUFS - referenceGainDb;
         AoideLoudness loudness;
-        loudness.setEbuR128GainDb(ebuR128GainDb);
+        loudness.setEbuR128Lufs(ebuR128Lufs);
         audioContent.setLoudness(std::move(loudness));
     }
 
