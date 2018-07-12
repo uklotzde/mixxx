@@ -487,10 +487,10 @@ void AoideRating::setOwner(QString owner) {
     }
 }
 
-double AoideLoudness::ebuR128Lufs(double defaultDb) const {
+double AoideLoudness::ituBs1770Lufs(double defaultDb) const {
     for (const auto jsonValue : m_jsonArray) {
         DEBUG_ASSERT(jsonValue.isObject());
-        const auto innerValue = jsonValue.toObject().value("ebu-r128-lufs");
+        const auto innerValue = jsonValue.toObject().value("itu-bs1770-lufs");
         if (innerValue.isDouble()) {
             return innerValue.toDouble(defaultDb);
         }
@@ -498,16 +498,16 @@ double AoideLoudness::ebuR128Lufs(double defaultDb) const {
     return defaultDb;
 }
 
-void AoideLoudness::setEbuR128Lufs(double ebuR128Lufs) {
+void AoideLoudness::setItuBs1770Lufs(double ituBs1770Lufs) {
     for (auto i = m_jsonArray.begin(); i != m_jsonArray.end(); ++i) {
         DEBUG_ASSERT(i->isObject());
-        auto innerValue = i->toObject().value("ebu-r128-lufs");
+        auto innerValue = i->toObject().value("itu-bs1770-lufs");
         if (innerValue.isDouble()) {
-            *i = QJsonObject{{"ebu-r128-lufs", ebuR128Lufs}};
+            *i = QJsonObject{{"itu-bs1770-lufs", ituBs1770Lufs}};
             return;
         }
     }
-    m_jsonArray += QJsonObject{{"ebu-r128-lufs", ebuR128Lufs}};
+    m_jsonArray += QJsonObject{{"itu-bs1770-lufs", ituBs1770Lufs}};
 }
 
 /*static*/ const QString AoideScoredSongFeature::kAcousticness = "acousticness";

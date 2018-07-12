@@ -129,9 +129,9 @@ AoideTrack Translator::exportTrack(const Track& track) const {
         // Assumption: Gain has been calculated with the new EBU R128 algorithm.
         const double referenceGainDb = ratio2db(trackInfo.getReplayGain().getRatio());
         // Reconstruct the LUFS value from the relative gain
-        const double ebuR128Lufs = AnalyzerEbur128::kReplayGain2ReferenceLUFS - referenceGainDb;
+        const double ituBs1770Lufs = AnalyzerEbur128::kReplayGain2ReferenceLUFS - referenceGainDb;
         AoideLoudness loudness;
-        loudness.setEbuR128Lufs(ebuR128Lufs);
+        loudness.setItuBs1770Lufs(ituBs1770Lufs);
         audioContent.setLoudness(std::move(loudness));
     }
 

@@ -146,8 +146,8 @@ class AoideLoudness : public AoideJsonArray {
         : AoideJsonArray(std::move(jsonArray)) {
     }
 
-    double ebuR128Lufs(double defaultDb = 0) const;
-    void setEbuR128Lufs(double ebuR128Lufs);
+    double ituBs1770Lufs(double defaultDb = 0) const;
+    void setItuBs1770Lufs(double ituBs1770Lufs);
 };
 
 Q_DECLARE_METATYPE(AoideLoudness);
