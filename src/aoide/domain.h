@@ -440,7 +440,7 @@ class AoideTrack : public AoideTrackOrAlbum {
         : AoideTrackOrAlbum(std::move(jsonObject)) {
     }
 
-    QString uri(const QString& collectionUid) const;
+    QString contentUri(const QString& contentType = QString()) const;
 
     AoideRelease release() const;
     void setRelease(AoideRelease release = AoideRelease());

@@ -114,6 +114,7 @@ AoideTrack Translator::exportTrack(const Track& track) const {
 
     QJsonObject trackCollection{
             {"uid", m_collectionUid},
+            {"playCount", trackRecord.getPlayCounter().getTimesPlayed()},
     };
     if (trackRecord.getDateAdded().isValid()) {
         trackCollection.insert(
@@ -141,19 +142,14 @@ AoideTrack Translator::exportTrack(const Track& track) const {
     audioContent.setEncoder(std::move(audioEncoder));
 
     QJsonObject trackSource{
-            {"uri", track.getLocationUri()},
-            {"mediaType", QMimeDatabase().mimeTypeForFile(track.getLocation()).name()},
+            {"contentUri", track.getLocationUri()},
+            {"contentType", QMimeDatabase().mimeTypeForFile(track.getLocation()).name()},
             {"audioContent", audioContent.intoJsonObject()},
     };
 
-    QJsonArray trackResources{QJsonObject{
-            {"collection", std::move(trackCollection)},
-            {"source", std::move(trackSource)},
-            {"playCount", trackRecord.getPlayCounter().getTimesPlayed()},
-    }};
-
     QJsonObject jsonTrack{
-            {"resources", std::move(trackResources)},
+        { "collections", QJsonArray{ std::move(trackCollection) }},
+        { "sources", QJsonArray{ std::move(trackSource) }},
     };
 
     QJsonArray trackNumbers{

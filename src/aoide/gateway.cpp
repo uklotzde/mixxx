@@ -411,7 +411,7 @@ void Gateway::replaceTracks(
         // TODO: Add more transformers here
 
         jsonReplacements += QJsonObject{
-                {"uri", track.uri(collectionUid)},
+                {"uri", track.contentUri()},
                 {"track", track.intoJsonObject()},
         };
     }

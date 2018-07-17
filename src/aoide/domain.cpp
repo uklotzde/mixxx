@@ -824,16 +824,25 @@ void AoideRelease::setLicenses(QStringList licenses) {
     putOptional("licenses", QJsonArray::fromStringList(std::move(licenses)));
 }
 
-QString AoideTrack::uri(const QString& collectionUid) const {
-    DEBUG_ASSERT(!collectionUid.isEmpty());
-    const QJsonArray resources = m_jsonObject.value("resources").toArray();
-    for (const auto& jsonValue : resources) {
-        const QJsonObject resource = jsonValue.toObject();
-        if (resource.value("collection").toObject().value("uid") == collectionUid) {
-            return resource.value("source").toObject().value("uri").toString();
+QString AoideTrack::contentUri(const QString& contentType) const {
+    const QJsonArray sources = m_jsonObject.value("sources").toArray();
+    VERIFY_OR_DEBUG_ASSERT((sources.size() <= 1) || !contentType.isEmpty()) {
+        kLogger.critical()
+                << "Missing content type for selecting a single URI from"
+                << sources.size()
+                << "track sources";
+        return QString();
+    }
+    for (const auto& jsonValue : sources) {
+        const QJsonObject source = jsonValue.toObject();
+        if (contentType.isEmpty() || (source.value("contentType").toString() == contentType)) {
+            return source.value("contentUri").toString();
         }
     }
-    DEBUG_ASSERT(resources.isEmpty());
+    DEBUG_ASSERT(sources.isEmpty());
+    kLogger.warning()
+            << "No URI found for content type"
+            << contentType;
     return QString();
 }
 
