@@ -22,23 +22,23 @@ QVariant TrackListModel::itemData(const Item& item, ItemDataRole role) {
     case ItemDataRole::RevisionTimestamp:
         return item.header().revision().timestamp();
     case ItemDataRole::ContentType:
-        return item.body().contentType();
+        return item.body().source().contentType();
     case ItemDataRole::ContentUri:
-        return item.body().contentUri();
+        return item.body().source().contentUri();
     case ItemDataRole::AudioChannelsCount:
-        return item.body().audioContent().channelsCount();
+        return item.body().source().audioContent().channelsCount();
     case ItemDataRole::AudioDurationMs:
-        return item.body().audioContent().durationMs();
+        return item.body().source().audioContent().durationMs();
     case ItemDataRole::AudioSampleRateHz:
-        return item.body().audioContent().sampleRateHz();
+        return item.body().source().audioContent().sampleRateHz();
     case ItemDataRole::AudioBitRateBps:
-        return item.body().audioContent().bitRateBps();
+        return item.body().source().audioContent().bitRateBps();
     case ItemDataRole::AudioLoudnessItuBs1770Lufs:
-        return item.body().audioContent().loudness().ituBs1770Lufs();
+        return item.body().source().audioContent().loudness().ituBs1770Lufs();
     case ItemDataRole::AudioEncoderName:
-        return item.body().audioContent().encoder().value("name");
+        return item.body().source().audioContent().encoder().value("name");
     case ItemDataRole::AudioEncoderSettings:
-        return item.body().audioContent().encoder().value("settings");
+        return item.body().source().audioContent().encoder().value("settings");
     case ItemDataRole::Title: {
         const auto& titles = item.body().titles();
         DEBUG_ASSERT(titles.size() <= 1);
@@ -110,7 +110,7 @@ QVariant TrackListModel::data(const QModelIndex& index, int role) const {
     switch (role) {
     case Qt::DisplayRole:
         // Display the decoded URI
-        return QUrl(item.body().contentUri());
+        return QUrl(item.body().source().contentUri());
     default:
         if (role >= Qt::UserRole) {
             return itemData(item, ItemDataRole(role));

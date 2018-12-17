@@ -434,17 +434,26 @@ class AoideAlbum : public AoideTrackOrAlbum {
 
 Q_DECLARE_METATYPE(AoideAlbum);
 
+class AoideTrackSource : public AoideJsonObject {
+  public:
+    explicit AoideTrackSource(QJsonObject jsonObject = QJsonObject())
+        : AoideJsonObject(std::move(jsonObject)) {
+    }
+
+    QString contentType() const;
+    QString contentUri() const;
+    AoideAudioContent audioContent() const;
+};
+
+Q_DECLARE_METATYPE(AoideTrackSource);
+
 class AoideTrack : public AoideTrackOrAlbum {
   public:
     explicit AoideTrack(QJsonObject jsonObject = QJsonObject())
         : AoideTrackOrAlbum(std::move(jsonObject)) {
     }
 
-    // TODO: Replace with
-    // AoideTrackSource trackSource(const QString& contentType = QString()) const;
-    QString contentType() const;
-    QString contentUri(const QString& contentType = QString()) const;
-    AoideAudioContent audioContent(const QString& contentType = QString()) const;
+    AoideTrackSource source(const QString& contentType = QString()) const;
 
     AoideRelease release() const;
     void setRelease(AoideRelease release = AoideRelease());

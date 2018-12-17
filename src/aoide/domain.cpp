@@ -824,60 +824,38 @@ void AoideRelease::setLicenses(QStringList licenses) {
     putOptional("licenses", QJsonArray::fromStringList(std::move(licenses)));
 }
 
-QString AoideTrack::contentType() const {
-    const QJsonArray sources = m_jsonObject.value("sources").toArray();
-    VERIFY_OR_DEBUG_ASSERT(sources.size() <= 1) {
-        kLogger.warning()
-                << "Cannot determine content type from"
-                << sources.size()
-                << "track sources";
-        return QString();
-    }
-    return sources.isEmpty() ? QString() : sources.first().toObject().value("contentType").toString();
+QString AoideTrackSource::contentType() const {
+    return m_jsonObject.value("contentType").toString();
 }
 
-QString AoideTrack::contentUri(const QString& contentType) const {
+QString AoideTrackSource::contentUri() const {
+    return m_jsonObject.value("contentUri").toString();
+}
+
+AoideAudioContent AoideTrackSource::audioContent() const {
+    return AoideAudioContent(m_jsonObject.value("audioContent").toObject());
+}
+
+AoideTrackSource AoideTrack::source(const QString& contentType) const {
     const QJsonArray sources = m_jsonObject.value("sources").toArray();
     VERIFY_OR_DEBUG_ASSERT((sources.size() <= 1) || !contentType.isEmpty()) {
         kLogger.warning()
-                << "Missing content type for selecting a single URI from"
+                << "Missing content type for selecting one of"
                 << sources.size()
                 << "track sources";
-        return QString();
+        return AoideTrackSource();
     }
     for (const auto& jsonValue : sources) {
-        const QJsonObject source = jsonValue.toObject();
-        if (contentType.isEmpty() || (source.value("contentType").toString() == contentType)) {
-            return source.value("contentUri").toString();
+        const auto source = AoideTrackSource(jsonValue.toObject());
+        if (contentType.isEmpty() || (source.contentType() == contentType)) {
+            return AoideTrackSource(source);
         }
     }
     DEBUG_ASSERT(sources.isEmpty());
     kLogger.warning()
-            << "No URI found for content type"
+            << "No track source found for content type"
             << contentType;
-    return QString();
-}
-
-AoideAudioContent AoideTrack::audioContent(const QString& contentType) const {
-    const QJsonArray sources = m_jsonObject.value("sources").toArray();
-    VERIFY_OR_DEBUG_ASSERT((sources.size() <= 1) || !contentType.isEmpty()) {
-        kLogger.warning()
-                << "Missing content type for selecting a source from"
-                << sources.size()
-                << "track sources";
-        return AoideAudioContent();
-    }
-    for (const auto& jsonValue : sources) {
-        const QJsonObject source = jsonValue.toObject();
-        if (contentType.isEmpty() || (source.value("contentType").toString() == contentType)) {
-            return AoideAudioContent(source.value("audioContent").toObject());
-        }
-    }
-    DEBUG_ASSERT(sources.isEmpty());
-    kLogger.warning()
-            << "No source found for content type"
-            << contentType;
-    return AoideAudioContent();
+    return AoideTrackSource();
 }
 
 AoideRelease AoideTrack::release() const {
