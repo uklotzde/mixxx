@@ -16,6 +16,8 @@ namespace {
 
 const Logger kLogger("aoide LibraryFeature");
 
+const QString kInitialSearch = "";
+
 } // anonymous namespace
 
 LibraryFeature::LibraryFeature(
@@ -55,7 +57,11 @@ TreeItemModel* LibraryFeature::getChildModel() {
 
 void LibraryFeature::activate() {
     emit switchToView(m_title);
-    if (!m_trackListModel->searchText().isNull()) {
+    if (m_trackListModel->searchText().isNull()) {
+        // 1st activation
+        m_trackListModel->searchTracks(kInitialSearch);
+        emit restoreSearch(kInitialSearch);
+    } else {
         emit restoreSearch(m_trackListModel->searchText());
     }
 }

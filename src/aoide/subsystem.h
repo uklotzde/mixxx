@@ -30,6 +30,10 @@ class Subsystem: public QObject {
             QObject* parent = nullptr);
     ~Subsystem() override = default;
 
+    const Settings& settings() const {
+        return m_settings;
+    }
+
     typedef AsyncRestClient::RequestId RequestId;
 
     void startup(

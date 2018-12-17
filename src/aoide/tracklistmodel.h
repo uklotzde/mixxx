@@ -21,6 +21,7 @@ class TrackListModel: public QAbstractListModel {
         RevisionTimestamp,
         ContentType,
         ContentUri,
+        ContentUrl, // QUrl of the decoded URI string
         AudioChannelsCount,
         AudioChannelsLayout,
         AudioDurationMs,
@@ -37,11 +38,8 @@ class TrackListModel: public QAbstractListModel {
         Comment,
         Grouping,
         Composer,
-        MusicTempo,
-        MusicKey,
+        MusicTempoBpm,
     };
-
-    static QVariant itemData(const Item& item, ItemDataRole role);
 
     explicit TrackListModel(
             QPointer<Subsystem> subsystem,
@@ -51,6 +49,9 @@ class TrackListModel: public QAbstractListModel {
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 
     QModelIndex parent(const QModelIndex& index) const override;
+
+    const Item& itemAt(const QModelIndex& index) const;
+    QVariant itemData(const Item& item, ItemDataRole role) const;
 
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 
