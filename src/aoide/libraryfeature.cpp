@@ -55,8 +55,8 @@ TreeItemModel* LibraryFeature::getChildModel() {
 
 void LibraryFeature::activate() {
     emit switchToView(m_title);
-    if (!m_trackListModel->phraseQuery().isNull()) {
-        emit restoreSearch(m_trackListModel->phraseQuery());
+    if (!m_trackListModel->searchText().isNull()) {
+        emit restoreSearch(m_trackListModel->searchText());
     }
 }
 

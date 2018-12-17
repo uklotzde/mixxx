@@ -172,12 +172,13 @@ void TrackListModel::fetchMore(const QModelIndex& parent) {
 }
 
 void TrackListModel::searchTracks(
-        QString phraseQuery) {
+        QString searchText) {
     if (m_pendingRequestId.isValid()) {
         kLogger.warning()
                 << "Discarding pending search request"
                 << m_pendingRequestId;
     }
+    auto phraseQuery = searchText.isNull() ? QString("") : searchText;
     DEBUG_ASSERT(m_itemsPerPage > 0);
     AoidePagination pagination;
     pagination.offset = 0;
@@ -188,7 +189,8 @@ void TrackListModel::searchTracks(
     DEBUG_ASSERT(m_pendingRequestId.isValid());
     m_pendingRequestFirstRow = pagination.offset;
     m_pendingRequestLastRow = m_pendingRequestFirstRow + (pagination.limit - 1);
-    m_phraseQuery = phraseQuery.isNull() ? QString("") : phraseQuery;
+    m_searchText = searchText;
+    m_phraseQuery = phraseQuery;
 }
 
 void TrackListModel::searchTracksResult(

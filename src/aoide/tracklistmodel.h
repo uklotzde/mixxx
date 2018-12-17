@@ -57,8 +57,8 @@ class TrackListModel: public QAbstractListModel {
     bool canFetchMore(const QModelIndex& parent) const override;
     void fetchMore(const QModelIndex& parent) override;
 
-    const QString& phraseQuery() const {
-        return m_phraseQuery;
+    const QString& searchText() const {
+        return m_searchText;
     }
 
   public slots:
@@ -74,6 +74,8 @@ class TrackListModel: public QAbstractListModel {
     const QPointer<Subsystem> m_subsystem;
 
     int m_itemsPerPage;
+
+    QString m_searchText;
 
     Subsystem::RequestId m_pendingRequestId;
     int m_pendingRequestFirstRow;
