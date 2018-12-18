@@ -187,6 +187,9 @@ WTrackTableView::~WTrackTableView() {
     delete m_pClearAllMetadataAction;
     delete m_pPurgeAct;
     delete m_pFileBrowserAct;
+
+    delete m_pAppendCommentTagAct;
+    delete m_pRemoveCommentTagAct;
 }
 
 void WTrackTableView::enableCachedOnly() {
@@ -483,6 +486,13 @@ void WTrackTableView::createActions() {
     m_pSendMetadataToAoideAct = new QAction(tr("Send to aoide"), this);
     connect(m_pSendMetadataToAoideAct, SIGNAL(triggered()),
             this, SLOT(slotSendMetadataToAoide()));
+
+    m_pAppendCommentTagAct = new QAction(tr("Append comment tag"), this);
+    connect(m_pAppendCommentTagAct, SIGNAL(triggered()),
+            this, SLOT(slotAppendCommentTag()));
+    m_pRemoveCommentTagAct = new QAction(tr("Remove comment tag"), this);
+    connect(m_pRemoveCommentTagAct, SIGNAL(triggered()),
+            this, SLOT(slotRemoveCommentTag()));
 
     m_pAddToPreviewDeck = new QAction(tr("Preview Deck"), this);
     // currently there is only one preview deck so just map it here.
@@ -921,6 +931,9 @@ void WTrackTableView::contextMenuEvent(QContextMenuEvent* event) {
             m_pSendMetadataToAoideAct->setEnabled(m_aoideSubsystem->hasActiveCollection());
             m_pMetadataMenu->addAction(m_pSendMetadataToAoideAct);
         }
+
+        m_pMetadataMenu->addAction(m_pAppendCommentTagAct);
+        m_pMetadataMenu->addAction(m_pRemoveCommentTagAct);
 
         m_pClearMetadataMenu->clear();
 
@@ -1520,6 +1533,80 @@ void WTrackTableView::slotExportTrackMetadataIntoFileTags() {
             // cause crashes or at least audible glitches!
             mixxx::DlgTrackMetadataExport::showMessageBoxOncePerSession();
             pTrack->markForMetadataExport();
+        }
+    }
+}
+
+void WTrackTableView::slotAppendCommentTag() {
+    appendCommentTag("Collection:DJ", " ");
+}
+
+void WTrackTableView::slotRemoveCommentTag() {
+    removeCommentTag("Collection:DJ", " ");
+}
+
+void WTrackTableView::appendCommentTag(const QString& tag, const QString& sep) {
+    TrackModel* pTrackModel = getTrackModel();
+    if (!pTrackModel) {
+        return;
+    }
+
+    const QModelIndexList indices = selectionModel()->selectedRows();
+    if (indices.isEmpty()) {
+        return;
+    }
+
+    TrackModel* trackModel = getTrackModel();
+    for (const auto& index : indices) {
+        TrackPointer pTrack = trackModel->getTrack(index);
+        if (pTrack) {
+            auto comment = pTrack->getComment();
+            const auto tokens = comment.split(sep);
+            TrackPointer pModifyTrack = pTrack;
+            for (const auto& token : tokens) {
+                if (token == tag) {
+                    pModifyTrack.reset();
+                    break;
+                }
+            }
+            if (pModifyTrack) {
+                comment += sep;
+                comment += tag;
+                pModifyTrack->setComment(comment);
+            }
+        }
+    }
+}
+
+void WTrackTableView::removeCommentTag(const QString& tag, const QString& sep) {
+    TrackModel* pTrackModel = getTrackModel();
+    if (!pTrackModel) {
+        return;
+    }
+
+    const QModelIndexList indices = selectionModel()->selectedRows();
+    if (indices.isEmpty()) {
+        return;
+    }
+
+    TrackModel* trackModel = getTrackModel();
+    for (const auto& index : indices) {
+        TrackPointer pTrack = trackModel->getTrack(index);
+        if (pTrack) {
+            auto comment = pTrack->getComment();
+            auto tokens = comment.split(sep);
+            TrackPointer pModifyTrack;
+            for (auto i = tokens.begin(); i != tokens.end(); ++i) {
+                if (*i == tag) {
+                    tokens.erase(i);
+                    pModifyTrack = pTrack;
+                    break;
+                }
+            }
+            if (pModifyTrack) {
+                comment = tokens.join(sep);
+                pTrack->setComment(comment);
+            }
         }
     }
 }

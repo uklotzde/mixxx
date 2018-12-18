@@ -105,6 +105,9 @@ class WTrackTableView : public WLibraryTableView {
     void slotTrackInfoClosed();
     void slotTagFetcherClosed();
 
+    void slotAppendCommentTag();
+    void slotRemoveCommentTag();
+
   private:
 
     void sendToAutoDJ(PlaylistDAO::AutoDJSendLoc loc);
@@ -119,6 +122,9 @@ class WTrackTableView : public WLibraryTableView {
     void enableCachedOnly();
     void selectionChanged(const QItemSelection &selected,
                           const QItemSelection &deselected) override;
+
+    void appendCommentTag(const QString& tag, const QString& sep);
+    void removeCommentTag(const QString& tag, const QString& sep);
 
     // Mouse move event, implemented to hide the text and show an icon instead
     // when dragging.
@@ -170,6 +176,9 @@ class WTrackTableView : public WLibraryTableView {
     QAction *m_pExportMetadataAct;
 
     QAction *m_pSendMetadataToAoideAct;
+
+    QAction *m_pAppendCommentTagAct;
+    QAction *m_pRemoveCommentTagAct;
 
     // Load Track to PreviewDeck
     QAction* m_pAddToPreviewDeck;
