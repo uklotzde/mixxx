@@ -30,21 +30,24 @@ class TrackListModel: public QAbstractListModel {
         AudioLoudnessItuBs1770Lufs,
         AudioEncoderName,
         AudioEncoderSettings,
-        Artist,
         Title,
-        AlbumArtist,
-        AlbumTitle,
+        Artist,
+        Composer,
         Genre,
         Comment,
         Grouping,
-        Composer,
+        AlbumTitle,
+        AlbumArtist,
         MusicTempoBpm,
+        // TODO: Add missing roles...
     };
 
     explicit TrackListModel(
             QPointer<Subsystem> subsystem,
             QObject* parent = nullptr);
     ~TrackListModel() override;
+
+    QHash<int, QByteArray> roleNames() const override;
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 

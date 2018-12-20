@@ -50,6 +50,7 @@
         <file>images/preferences/ic_preferences_vinyl.svg</file>
         <file>images/preferences/ic_preferences_warning.svg</file>
         <file>images/preferences/ic_preferences_waveforms.svg</file>
+        <file>qml/tracklistview.qml</file>
         <file>schema.xml</file>
         <file>shaders/filteredsignal.frag</file>
         <file>shaders/passthrough.vert</file>

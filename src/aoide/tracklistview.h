@@ -1,7 +1,8 @@
 #pragma once
 
-#include <QListView>
+#include <QtQuickWidgets/QQuickWidget>
 #include <QPointer>
+#include <QWidget>
 
 #include "library/libraryview.h"
 
@@ -11,7 +12,7 @@ namespace aoide {
 
 class TrackListModel;
 
-class TrackListView : public QListView, public LibraryView {
+class TrackListView : public QQuickWidget, public LibraryView {
     Q_OBJECT
 
   public:
@@ -24,10 +25,12 @@ class TrackListView : public QListView, public LibraryView {
     bool hasFocus() const override;
     void onSearch(const QString& text) override;
 
-    void setModel(QAbstractItemModel* model) final;
+  private slots:
+    void quickWidgetStatusChanged(QQuickWidget::Status status);
+    void sceneGraphError(QQuickWindow::SceneGraphError error, const QString& message);
 
   private:
-    QPointer<TrackListModel> m_model;
+    const QPointer<TrackListModel> m_model;
 };
 
 } // namespace aoide

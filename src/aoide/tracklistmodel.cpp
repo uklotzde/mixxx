@@ -33,6 +33,31 @@ TrackListModel::~TrackListModel() {
     kLogger.debug() << "Destroying instance" << this;
 }
 
+QHash<int, QByteArray> TrackListModel::roleNames() const {
+    QHash<int, QByteArray> roles;
+    roles[ItemDataRole::Uid] = "uid";
+    roles[ItemDataRole::RevisionOrdinal] = "revisionOrdinal";
+    roles[ItemDataRole::RevisionTimestamp] = "revisionTimestamp";
+    roles[ItemDataRole::AudioChannelsCount] = "audioChannelsCount";
+    roles[ItemDataRole::AudioChannelsLayout] = "audioChannelsLayout";
+    roles[ItemDataRole::AudioDurationMs] = "audioDurationMs";
+    roles[ItemDataRole::AudioSampleRateHz] = "audioSampleRateHz";
+    roles[ItemDataRole::AudioBitRateBps] = "audioBitRateBps";
+    roles[ItemDataRole::AudioLoudnessItuBs1770Lufs] = "audioLoudnessItuBs1770Lufs";
+    roles[ItemDataRole::AudioEncoderName] = "audioEncoderName";
+    roles[ItemDataRole::AudioEncoderSettings] = "audioEncoderSettings";
+    roles[ItemDataRole::Title] = "title";
+    roles[ItemDataRole::Artist] = "artist";
+    roles[ItemDataRole::Composer] = "composer";
+    roles[ItemDataRole::Genre] = "composer";
+    roles[ItemDataRole::Comment] = "comment";
+    roles[ItemDataRole::Grouping] = "grouping";
+    roles[ItemDataRole::AlbumTitle] = "albumTitle";
+    roles[ItemDataRole::AlbumArtist] = "albumArtist";
+    // TODO: Add missing roles...
+    return roles;
+}
+
 int TrackListModel::rowCount(const QModelIndex& parent) const {
     DEBUG_ASSERT(!parent.isValid());
     if (m_itemPages.isEmpty()) {
@@ -129,30 +154,10 @@ QVariant TrackListModel::itemData(const Item& item, ItemDataRole role) const {
         DEBUG_ASSERT(actors.size() <= 1);
         return actors.isEmpty() ? QString() : actors.first().name();
     }
-    case ItemDataRole::AlbumTitle: {
-        const auto& titles = item.body().album().titles();
-        DEBUG_ASSERT(titles.size() <= 1);
-        return titles.isEmpty() ? QString() : titles.first().name();
-    }
-    case ItemDataRole::AlbumArtist: {
-        const auto& actors = item.body().album().actors();
-        DEBUG_ASSERT(actors.size() <= 1);
-        return actors.isEmpty() ? QString() : actors.first().name();
-    }
     case ItemDataRole::Composer: {
         const auto& actors = item.body().album().actors(AoideActor::kRoleComposer);
         DEBUG_ASSERT(actors.size() <= 1);
         return actors.isEmpty() ? QString() : actors.first().name();
-    }
-    case ItemDataRole::Comment: {
-        const auto& comments = item.body().comments();
-        DEBUG_ASSERT(comments.size() <= 1);
-        return comments.isEmpty() ? QString() : comments.first().text();
-    }
-    case ItemDataRole::Grouping: {
-        const auto& groupingTags = item.body().tags(AoideScoredTag::kFacetContentGroup);
-        DEBUG_ASSERT(groupingTags.size() <= 1);
-        return groupingTags.isEmpty() ? QString() : groupingTags.first().term();
     }
     case ItemDataRole::Genre: {
         const auto& genreTags = item.body().tags(AoideScoredTag::kFacetGenre);
@@ -164,6 +169,26 @@ QVariant TrackListModel::itemData(const Item& item, ItemDataRole role) const {
             multiGenre += genreTag.term();
         }
         return multiGenre;
+    }
+    case ItemDataRole::Comment: {
+        const auto& comments = item.body().comments();
+        DEBUG_ASSERT(comments.size() <= 1);
+        return comments.isEmpty() ? QString() : comments.first().text();
+    }
+    case ItemDataRole::Grouping: {
+        const auto& groupingTags = item.body().tags(AoideScoredTag::kFacetContentGroup);
+        DEBUG_ASSERT(groupingTags.size() <= 1);
+        return groupingTags.isEmpty() ? QString() : groupingTags.first().term();
+    }
+    case ItemDataRole::AlbumTitle: {
+        const auto& titles = item.body().album().titles();
+        DEBUG_ASSERT(titles.size() <= 1);
+        return titles.isEmpty() ? QString() : titles.first().name();
+    }
+    case ItemDataRole::AlbumArtist: {
+        const auto& actors = item.body().album().actors();
+        DEBUG_ASSERT(actors.size() <= 1);
+        return actors.isEmpty() ? QString() : actors.first().name();
     }
     case ItemDataRole::MusicTempoBpm: {
         return item.body().profile().tempoBpm(Bpm::kValueUndefined);
@@ -250,10 +275,10 @@ void TrackListModel::searchTracksResult(
         m_pendingRequestId.reset();
         DEBUG_ASSERT(!m_pendingRequestId.isValid());
         DEBUG_ASSERT(m_pendingRequestFirstRow >= 0);
-        if (m_pendingRequestFirstRow == 0) {
-            beginResetModel();
+        if ((m_pendingRequestFirstRow == 0) && (rowCount() > 0)) {
+            beginRemoveRows(QModelIndex(), 0, rowCount() - 1);
             m_itemPages.clear();
-            endResetModel();
+            endRemoveRows();
         }
         DEBUG_ASSERT(m_pendingRequestFirstRow == rowCount());
         kLogger.debug()

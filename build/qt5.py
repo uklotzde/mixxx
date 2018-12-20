@@ -874,6 +874,7 @@ def enable_modules(self, modules, debug=False, crosscompiling=False, staticdeps=
         'QtQmlDevTools',
         'QtQuick',
         'QtQuickParticles',
+        'QtQuickWidgets',
         'QtSql',
         'QtQuickTest',
         'QtTest',
