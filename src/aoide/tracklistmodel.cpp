@@ -14,6 +14,50 @@ const Logger kLogger("aoide TrackListModel");
 
 const TrackListModel::Item kEmptyItem;
 
+void appendDummyTitle(AoideTitleVector* titles, QString name) {
+    if (!name.isNull()) {
+        AoideTitle title;
+        title.setName(std::move(name));
+        *titles += std::move(title);
+    }
+}
+
+void appendDummyActor(AoideActorVector* actors, QString name) {
+    if (!name.isNull()) {
+        AoideActor actor;
+        actor.setRole(std::move(AoideActor::kRoleArtist));
+        actor.setName(std::move(name));
+        *actors += std::move(actor);
+    }
+}
+
+AoideTrackEntity createDummyItem(int i) {
+    AoideTrack aoideTrack;
+
+    AoideTitleVector trackTitles;
+    appendDummyTitle(&trackTitles, QString("title %1").arg(QString::number(i)));
+    aoideTrack.addTitles(std::move(trackTitles));
+
+    AoideActorVector trackActors;
+    appendDummyActor(&trackActors, QString("artist %1").arg(QString::number(i)));
+    aoideTrack.addActors(std::move(trackActors));
+
+    QJsonObject revision {
+        { "ordinal", 1 },
+        { "timestamp", AoideJsonBase::formatDateTime(QDateTime::currentDateTime()) },
+    };
+    QJsonObject header {
+            { "uid", QString::number(i) },
+            { "revision", revision }
+    };
+    QJsonObject body = aoideTrack.intoJsonObject();
+
+    return AoideTrackEntity(QJsonObject {
+       { "header", header },
+       { "body", body },
+    });
+}
+
 } // anonymous namespace
 
 TrackListModel::TrackListModel(
@@ -27,6 +71,15 @@ TrackListModel::TrackListModel(
     connect(m_subsystem, &Subsystem::searchTracksResult, this,
             &TrackListModel::searchTracksResult);
     kLogger.debug() << "Created instance" << this;
+
+    // Populate the model with some dummy tracks
+    // TODO: Remove this code in the final version
+    QVector<Item> dummyItems;
+    dummyItems.reserve(m_itemsPerPage);
+    for (int i = 0; i < m_itemsPerPage; ++i) {
+        dummyItems.push_back(createDummyItem(i));
+    }
+    m_itemPages.push_back(ItemPage(0, dummyItems));
 }
 
 TrackListModel::~TrackListModel() {
@@ -247,6 +300,11 @@ void TrackListModel::fetchMore(const QModelIndex& parent) {
 
 void TrackListModel::searchTracks(
         QString searchText) {
+    if (!m_subsystem->hasActiveCollection()) {
+        kLogger.warning()
+                << "Search not available without an active collection";
+        return;
+    }
     if (m_pendingRequestId.isValid()) {
         kLogger.warning()
                 << "Discarding pending search request"
