@@ -1060,6 +1060,8 @@ class MixxxCore(Feature):
                    "src/library/parserm3u.cpp",
                    "src/library/parsercsv.cpp",
 
+                   "src/library/asynctrackloader.cpp",
+
                    "src/widget/wwaveformviewer.cpp",
 
                    "src/waveform/sharedglcontext.cpp",
