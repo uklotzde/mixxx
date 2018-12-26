@@ -21,15 +21,18 @@ class AsyncRestClient: public QObject {
             QObject* parent = nullptr);
     ~AsyncRestClient() override = default;
 
-    typedef quint32 RequestId;
+    class RequestId {
+      public:
+        typedef quint32 value_t;
+        explicit RequestId(value_t value = 0): m_value(value) {}
+        operator value_t() const { return m_value; }
+        bool isValid() const { return m_value != 0; }
+        void reset() { m_value = 0; }
+      private:
+        value_t m_value;
+    };
 
-    static bool isValidRequestId(
-            RequestId requestId);
-
-    RequestId nextRequestId();
-
-    QPointer<QNetworkAccessManager> accessNetwork(
-            RequestId requestId);
+    static RequestId nextRequestId();
 
     static QNetworkRequest newJsonRequest(
             QUrl url);
@@ -38,6 +41,13 @@ class AsyncRestClient: public QObject {
             int statusCode) {
         return statusCode >= 200 && statusCode < 300;
     }
+
+    bool isRequestPending(RequestId requestId) const {
+        return m_pendingRequests.contains(requestId);
+    }
+
+    QPointer<QNetworkAccessManager> accessNetwork(
+            RequestId requestId);
 
     void afterNetworkRequestSent(
             RequestId requestId,
@@ -52,9 +62,9 @@ class AsyncRestClient: public QObject {
             QString errorMessage);
 
   private:
-    const QPointer<QNetworkAccessManager> m_networkAccessManager;
+    static QAtomicInteger<RequestId::value_t> s_requestId;
 
-    QAtomicInteger<RequestId> m_requestId;
+    const QPointer<QNetworkAccessManager> m_networkAccessManager;
 
     QMap<RequestId, QNetworkReply*> m_pendingRequests;
     QMap<QNetworkReply*, RequestId> m_pendingReplies;

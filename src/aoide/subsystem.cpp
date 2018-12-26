@@ -126,7 +126,7 @@ void Subsystem::deleteCollectionAsync(
     m_gateway->deleteCollectionAsync(collectionUid);
 }
 
-void Subsystem::searchTracksAsync(
+Subsystem::RequestId Subsystem::searchTracksAsync(
         QString phraseQuery,
         AoidePagination pagination) {
     // Accesses mutable member variables -> not thread-safe
@@ -134,7 +134,7 @@ void Subsystem::searchTracksAsync(
     VERIFY_OR_DEBUG_ASSERT(hasActiveCollection()) {
         kLogger.warning()
                 << "Cannot search tracks without active collection";
-        return;
+        return RequestId();
     }
     const auto requestId = m_gateway->searchTracksAsync(
             m_activeCollection.header().uid(),
@@ -146,6 +146,7 @@ void Subsystem::searchTracksAsync(
                 << requestId
                 << "to search for tracks";
     }
+    return requestId;
 }
 
 void Subsystem::replaceTracksAsync(
@@ -219,7 +220,7 @@ void Subsystem::searchTracksResultResponse(
                 << "Received result of tracks search"
                 << requestId;
     }
-    emit searchTracksResult(std::move(result));
+    emit searchTracksResult(requestId, std::move(result));
 }
 
 } // namespace aoide

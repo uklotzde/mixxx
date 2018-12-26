@@ -72,7 +72,7 @@ void Gateway::connectPeers() {
 }
 
 Gateway::RequestId Gateway::listCollectionsAsync(AoidePagination pagination) {
-    AsyncRestClient::RequestId requestId = m_restClient->nextRequestId();
+    AsyncRestClient::RequestId requestId = AsyncRestClient::nextRequestId();
     QMetaObject::invokeMethod(
             this, "listCollections",
             Qt::QueuedConnection, // async,
@@ -111,7 +111,7 @@ void Gateway::listCollectionsNetworkReplyFinished() {
     const std::pair<RequestId, int> response =
             m_restClient->receiveNetworkReply(reply, &jsonContent);
     const RequestId requestId = response.first;
-    if (!AsyncRestClient::isValidRequestId(requestId)) {
+    if (!requestId.isValid()) {
         return;
     }
     const int statusCode = response.second;
@@ -139,7 +139,7 @@ void Gateway::listCollectionsNetworkReplyFinished() {
 }
 
 Gateway::RequestId Gateway::createCollectionAsync(AoideCollection collection) {
-    AsyncRestClient::RequestId requestId = m_restClient->nextRequestId();
+    AsyncRestClient::RequestId requestId = AsyncRestClient::nextRequestId();
     QMetaObject::invokeMethod(
             this, "createCollection",
             Qt::QueuedConnection, // async,
@@ -177,7 +177,7 @@ void Gateway::createCollectionNetworkReplyFinished() {
     const std::pair<RequestId, int> response =
             m_restClient->receiveNetworkReply(reply, &jsonContent);
     const RequestId requestId = response.first;
-    if (!AsyncRestClient::isValidRequestId(requestId)) {
+    if (!requestId.isValid()) {
         return;
     }
     const int statusCode = response.second;
@@ -199,7 +199,7 @@ void Gateway::createCollectionNetworkReplyFinished() {
 }
 
 Gateway::RequestId Gateway::updateCollectionAsync(AoideCollectionEntity collectionEntity) {
-    AsyncRestClient::RequestId requestId = m_restClient->nextRequestId();
+    AsyncRestClient::RequestId requestId = AsyncRestClient::nextRequestId();
     QMetaObject::invokeMethod(
             this, "updateCollection",
             Qt::QueuedConnection, // async,
@@ -238,7 +238,7 @@ void Gateway::updateCollectionNetworkReplyFinished() {
     const std::pair<RequestId, int> response =
             m_restClient->receiveNetworkReply(reply, &jsonContent);
     const RequestId requestId = response.first;
-    if (!AsyncRestClient::isValidRequestId(requestId)) {
+    if (!requestId.isValid()) {
         return;
     }
     const int statusCode = response.second;
@@ -260,7 +260,7 @@ void Gateway::updateCollectionNetworkReplyFinished() {
 }
 
 Gateway::RequestId Gateway::deleteCollectionAsync(QString collectionUid) {
-    AsyncRestClient::RequestId requestId = m_restClient->nextRequestId();
+    AsyncRestClient::RequestId requestId = AsyncRestClient::nextRequestId();
     QMetaObject::invokeMethod(
             this, "deleteCollection",
             Qt::QueuedConnection, // async,
@@ -294,7 +294,7 @@ void Gateway::deleteCollectionNetworkReplyFinished() {
 
     const std::pair<RequestId, int> response = m_restClient->receiveNetworkReply(reply);
     const RequestId requestId = response.first;
-    if (!AsyncRestClient::isValidRequestId(requestId)) {
+    if (!requestId.isValid()) {
         return;
     }
     const int statusCode = response.second;
@@ -309,7 +309,7 @@ void Gateway::deleteCollectionNetworkReplyFinished() {
 
 Gateway::RequestId Gateway::searchTracksAsync(
         QString collectionUid, QString phraseQuery, AoidePagination pagination) {
-    AsyncRestClient::RequestId requestId = m_restClient->nextRequestId();
+    AsyncRestClient::RequestId requestId = AsyncRestClient::nextRequestId();
     QMetaObject::invokeMethod(
             this, "searchTracks",
             Qt::QueuedConnection, // async,
@@ -342,7 +342,7 @@ void Gateway::searchTracks(
 
     QByteArray jsonContent = QJsonDocument(QJsonObject{{
                                                    "phraseFilter",
-                                                   QJsonObject{{"query", phraseQuery}},
+                                                   QJsonObject{{"phrase", phraseQuery}},
                                            }})
                                      .toJson(QJsonDocument::Compact);
 
@@ -359,7 +359,7 @@ void Gateway::searchTracksNetworkReplyFinished() {
     const std::pair<RequestId, int> response =
             m_restClient->receiveNetworkReply(reply, &jsonContent);
     const RequestId requestId = response.first;
-    if (!AsyncRestClient::isValidRequestId(requestId)) {
+    if (!requestId.isValid()) {
         return;
     }
     const int statusCode = response.second;
@@ -392,7 +392,7 @@ void Gateway::searchTracksNetworkReplyFinished() {
 }
 
 Gateway::RequestId Gateway::replaceTracksAsync(QString collectionUid, QList<AoideTrack> tracks) {
-    AsyncRestClient::RequestId requestId = m_restClient->nextRequestId();
+    AsyncRestClient::RequestId requestId = AsyncRestClient::nextRequestId();
     QMetaObject::invokeMethod(
             this, "replaceTracks",
             Qt::QueuedConnection, // async,
@@ -450,7 +450,7 @@ void Gateway::replaceTracksNetworkReplyFinished() {
     const std::pair<RequestId, int> response =
             m_restClient->receiveNetworkReply(reply, &jsonContent);
     const RequestId requestId = response.first;
-    if (!AsyncRestClient::isValidRequestId(requestId)) {
+    if (!requestId.isValid()) {
         return;
     }
     const int statusCode = response.second;
@@ -477,7 +477,7 @@ void Gateway::replaceTracksNetworkReplyFinished() {
 
 Gateway::RequestId Gateway::listTagsFacetsAsync(
         QString collectionUid, QSharedPointer<QStringList> facets, AoidePagination pagination) {
-    AsyncRestClient::RequestId requestId = m_restClient->nextRequestId();
+    AsyncRestClient::RequestId requestId = AsyncRestClient::nextRequestId();
     QMetaObject::invokeMethod(
             this, "listTagsFacets",
             Qt::QueuedConnection, // async,
@@ -524,7 +524,7 @@ void Gateway::listTagsFacetsNetworkReplyFinished() {
     const std::pair<RequestId, int> response =
             m_restClient->receiveNetworkReply(reply, &jsonContent);
     const RequestId requestId = response.first;
-    if (!AsyncRestClient::isValidRequestId(requestId)) {
+    if (!requestId.isValid()) {
         return;
     }
     const int statusCode = response.second;
@@ -552,7 +552,7 @@ void Gateway::listTagsFacetsNetworkReplyFinished() {
 
 Gateway::RequestId Gateway::listTagsAsync(
         QString collectionUid, QSharedPointer<QStringList> facets, AoidePagination pagination) {
-    AsyncRestClient::RequestId requestId = m_restClient->nextRequestId();
+    AsyncRestClient::RequestId requestId = AsyncRestClient::nextRequestId();
     QMetaObject::invokeMethod(
             this, "listTags",
             Qt::QueuedConnection, // async,
@@ -599,7 +599,7 @@ void Gateway::listTagsNetworkReplyFinished() {
     const std::pair<RequestId, int> response =
             m_restClient->receiveNetworkReply(reply, &jsonContent);
     const RequestId requestId = response.first;
-    if (!AsyncRestClient::isValidRequestId(requestId)) {
+    if (!requestId.isValid()) {
         return;
     }
     const int statusCode = response.second;

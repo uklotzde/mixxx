@@ -1,0 +1,242 @@
+#include "aoide/tracklistmodel.h"
+
+#include "util/assert.h"
+#include "util/logger.h"
+
+namespace mixxx {
+
+namespace aoide {
+
+namespace {
+
+const Logger kLogger("aoide TrackListModel");
+
+} // anonymous namespace
+
+QVariant TrackListModel::itemData(const Item& item, ItemDataRole role) {
+    switch (role) {
+    case ItemDataRole::Uid:
+        return item.header().uid();
+    case ItemDataRole::RevisionOrdinal:
+        return item.header().revision().ordinal();
+    case ItemDataRole::RevisionTimestamp:
+        return item.header().revision().timestamp();
+    case ItemDataRole::ContentType:
+        return item.body().contentType();
+    case ItemDataRole::ContentUri:
+        return item.body().contentUri();
+    case ItemDataRole::AudioChannelsCount:
+        return item.body().audioContent().channelsCount();
+    case ItemDataRole::AudioDurationMs:
+        return item.body().audioContent().durationMs();
+    case ItemDataRole::AudioSampleRateHz:
+        return item.body().audioContent().sampleRateHz();
+    case ItemDataRole::AudioBitRateBps:
+        return item.body().audioContent().bitRateBps();
+    case ItemDataRole::AudioLoudnessItuBs1770Lufs:
+        return item.body().audioContent().loudness().ituBs1770Lufs();
+    case ItemDataRole::AudioEncoderName:
+        return item.body().audioContent().encoder().value("name");
+    case ItemDataRole::AudioEncoderSettings:
+        return item.body().audioContent().encoder().value("settings");
+    case ItemDataRole::Title: {
+        const auto& titles = item.body().titles();
+        DEBUG_ASSERT(titles.size() <= 1);
+        return titles.isEmpty() ? QString() : titles.first().name();
+    }
+    case ItemDataRole::Artist: {
+        const auto& actors = item.body().actors();
+        DEBUG_ASSERT(actors.size() <= 1);
+        return actors.isEmpty() ? QString() : actors.first().name();
+    }
+    case ItemDataRole::AlbumTitle: {
+        const auto& titles = item.body().album().titles();
+        DEBUG_ASSERT(titles.size() <= 1);
+        return titles.isEmpty() ? QString() : titles.first().name();
+    }
+    case ItemDataRole::AlbumArtist: {
+        const auto& actors = item.body().album().actors();
+        DEBUG_ASSERT(actors.size() <= 1);
+        return actors.isEmpty() ? QString() : actors.first().name();
+    }
+    default:
+        DEBUG_ASSERT(!"TODO");
+        return QVariant();
+    }
+}
+
+TrackListModel::TrackListModel(
+        QPointer<Subsystem> subsystem,
+        QObject* parent)
+        : QAbstractListModel(parent),
+          m_subsystem(subsystem),
+          m_itemsPerPage(200),
+          m_pendingRequestFirstRow(0),
+          m_pendingRequestLastRow(0) {
+    connect(m_subsystem, &Subsystem::searchTracksResult, this,
+            &TrackListModel::searchTracksResult);
+    kLogger.debug() << "Created instance" << this;
+}
+
+TrackListModel::~TrackListModel() {
+    kLogger.debug() << "Destroying instance" << this;
+}
+
+int TrackListModel::rowCount(const QModelIndex& parent) const {
+    DEBUG_ASSERT(!parent.isValid());
+    if (m_itemPages.isEmpty()) {
+        return 0;
+    } else {
+        const auto& lastPage = m_itemPages.last();
+        return lastPage.m_firstRow + lastPage.m_items.size();
+    }
+}
+
+QModelIndex TrackListModel::parent(const QModelIndex& /*index*/) const {
+    return QModelIndex();
+}
+
+QVariant TrackListModel::data(const QModelIndex& index, int role) const {
+    DEBUG_ASSERT(index.column() == 0);
+    const auto row = index.row();
+    const auto itemPageIndex = findItemPageIndex(row);
+    DEBUG_ASSERT(itemPageIndex >= 0);
+    DEBUG_ASSERT(itemPageIndex < m_itemPages.size());
+    const auto& itemPage = m_itemPages[itemPageIndex];
+    DEBUG_ASSERT(row >= itemPage.m_firstRow);
+    const auto pageRow = row - itemPage.m_firstRow;
+    DEBUG_ASSERT(pageRow < itemPage.m_items.size());
+    const auto& item = itemPage.m_items[pageRow];
+    switch (role) {
+    case Qt::DisplayRole:
+        // Display the decoded URI
+        return QUrl(item.body().contentUri());
+    default:
+        if (role >= Qt::UserRole) {
+            return itemData(item, ItemDataRole(role));
+        } else {
+            // TODO
+            return QVariant();
+        }
+    }
+}
+
+int TrackListModel::findItemPageIndex(int row) const {
+    int lowerIndex = 0;
+    int upperIndex = m_itemPages.size();
+    while (lowerIndex < upperIndex) {
+        if (lowerIndex == (upperIndex - 1)) {
+            DEBUG_ASSERT(lowerIndex < m_itemPages.size());
+            const auto& lowerItemPage = m_itemPages[lowerIndex];
+            DEBUG_ASSERT(lowerItemPage.m_firstRow <= row);
+            DEBUG_ASSERT((row - lowerItemPage.m_firstRow) < lowerItemPage.m_items.size());
+            return lowerIndex;
+        }
+        auto middleIndex = lowerIndex + (upperIndex - lowerIndex) / 2;
+        DEBUG_ASSERT(middleIndex < m_itemPages.size());
+        const auto& middleItemPage = m_itemPages[middleIndex];
+        if (row < middleItemPage.m_firstRow) {
+            upperIndex = middleIndex;
+        } else {
+            lowerIndex = middleIndex;
+        }
+    }
+    return -1;
+}
+
+bool TrackListModel::canFetchMore(const QModelIndex& parent) const {
+    DEBUG_ASSERT(!parent.isValid());
+    return !m_phraseQuery.isNull();
+}
+
+void TrackListModel::fetchMore(const QModelIndex& parent) {
+    VERIFY_OR_DEBUG_ASSERT(canFetchMore(parent)) {
+        return;
+    }
+    if (m_pendingRequestId.isValid()) {
+        kLogger.debug()
+                << "Can't fetch more rows while a search request is pending"
+                << m_pendingRequestId;
+        return;
+    }
+    DEBUG_ASSERT(m_itemsPerPage > 0);
+    AoidePagination pagination;
+    pagination.offset = rowCount();
+    pagination.limit = m_itemsPerPage;
+    m_pendingRequestId = m_subsystem->searchTracksAsync(
+            m_phraseQuery,
+            pagination);
+    DEBUG_ASSERT(m_pendingRequestId.isValid());
+    m_pendingRequestFirstRow = pagination.offset;
+    m_pendingRequestLastRow = m_pendingRequestFirstRow + (pagination.limit - 1);
+}
+
+void TrackListModel::searchTracks(
+        QString phraseQuery) {
+    if (m_pendingRequestId.isValid()) {
+        kLogger.warning()
+                << "Discarding pending search request"
+                << m_pendingRequestId;
+    }
+    DEBUG_ASSERT(m_itemsPerPage > 0);
+    AoidePagination pagination;
+    pagination.offset = 0;
+    pagination.limit = m_itemsPerPage;
+    m_pendingRequestId = m_subsystem->searchTracksAsync(
+            phraseQuery,
+            pagination);
+    DEBUG_ASSERT(m_pendingRequestId.isValid());
+    m_pendingRequestFirstRow = pagination.offset;
+    m_pendingRequestLastRow = m_pendingRequestFirstRow + (pagination.limit - 1);
+    m_phraseQuery = phraseQuery.isNull() ? QString("") : phraseQuery;
+}
+
+void TrackListModel::searchTracksResult(
+    mixxx::AsyncRestClient::RequestId requestId,
+    QVector<Item> result) {
+    DEBUG_ASSERT(requestId.isValid());
+    if (m_pendingRequestId == requestId) {
+        m_pendingRequestId.reset();
+        DEBUG_ASSERT(!m_pendingRequestId.isValid());
+        DEBUG_ASSERT(m_pendingRequestFirstRow >= 0);
+        if (m_pendingRequestFirstRow == 0) {
+            beginResetModel();
+            m_itemPages.clear();
+            endResetModel();
+        }
+        DEBUG_ASSERT(m_pendingRequestFirstRow == rowCount());
+        kLogger.debug()
+                << "Received"
+                << result.size()
+                << "tracks from subsystem";
+        if (result.isEmpty()) {
+            // No more results available
+            m_phraseQuery = QString();
+        } else {
+            int firstRow = m_pendingRequestFirstRow;
+            int lastRow = m_pendingRequestFirstRow + (result.size() - 1);
+            if (lastRow < m_pendingRequestLastRow) {
+                // No more results available
+                m_phraseQuery = QString();
+            }
+            beginInsertRows(QModelIndex(), firstRow, lastRow);
+            m_itemPages += ItemPage(m_pendingRequestFirstRow, std::move(result));
+            endInsertRows();
+        }
+    } else {
+        kLogger.debug()
+                << "Discarding search response"
+                << requestId
+                << "from subsystem";
+        if (m_pendingRequestId.isValid()) {
+            kLogger.debug()
+                    << "Waiting for search response"
+                    << requestId
+                    << "from subsystem";
+        }
+    }
+}
+
+} // namespace aoide
+
+} // namespace mixxx

@@ -25,8 +25,6 @@ namespace {
 
 const Logger kLogger("AsyncRestClient");
 
-const AsyncRestClient::RequestId INVALID_REQUEST_ID = 0;
-
 const QString JSON_CONTENT_TYPE = "application/json";
 
 const QMimeType JSON_MIME_TYPE = QMimeDatabase().mimeTypeForName(JSON_CONTENT_TYPE);
@@ -107,26 +105,22 @@ bool readJsonContent(
 
 } // anonymous namespace
 
-//static
-bool AsyncRestClient::isValidRequestId(RequestId requestId) {
-    return requestId != INVALID_REQUEST_ID;
-}
+QAtomicInteger<AsyncRestClient::RequestId::value_t> AsyncRestClient::s_requestId(
+        static_cast<AsyncRestClient::RequestId::value_t>(AsyncRestClient::RequestId()));
 
 AsyncRestClient::AsyncRestClient(
         QPointer<QNetworkAccessManager> networkAccessManager,
         QObject* parent)
     : QObject(parent),
-      m_networkAccessManager(std::move(networkAccessManager)),
-      m_requestId(INVALID_REQUEST_ID) {
-    DEBUG_ASSERT(!isValidRequestId(m_requestId));
+      m_networkAccessManager(std::move(networkAccessManager)) {
     std::call_once(registerMetaTypesOnceFlag, registerMetaTypes);
 }
 
 AsyncRestClient::RequestId AsyncRestClient::nextRequestId() {
     RequestId requestId;
     do {
-        requestId = ++m_requestId;
-    } while (!isValidRequestId(requestId));
+        requestId = RequestId(++s_requestId);
+    } while (!requestId.isValid());
     return requestId;
 }
 
@@ -166,7 +160,7 @@ QNetworkRequest AsyncRestClient::newJsonRequest(QUrl url) {
 void AsyncRestClient::afterNetworkRequestSent(
         RequestId requestId,
         QNetworkReply* reply) {
-    DEBUG_ASSERT(isValidRequestId(requestId));
+    DEBUG_ASSERT(requestId.isValid());
     DEBUG_ASSERT(reply);
     DEBUG_ASSERT(!m_pendingRequests.values().contains(reply));
     DEBUG_ASSERT(!m_pendingReplies.contains(reply));
@@ -202,14 +196,14 @@ std::pair<AsyncRestClient::RequestId, int> AsyncRestClient::receiveNetworkReply(
     reply->deleteLater();
 
     DEBUG_ASSERT(m_pendingRequests.size() == m_pendingReplies.size());
-    RequestId requestId = m_pendingReplies.value(reply, INVALID_REQUEST_ID);
-    VERIFY_OR_DEBUG_ASSERT(isValidRequestId(requestId) &&
+    RequestId requestId = m_pendingReplies.value(reply);
+    VERIFY_OR_DEBUG_ASSERT(requestId.isValid() &&
             (m_pendingRequests.value(requestId, nullptr) == reply)) {
         kLogger.critical()
                 << "Missing or mismatching request identifier"
                 << requestId
                 << "for received network reply detected";
-        return std::make_pair(INVALID_REQUEST_ID, HttpStatusCodes::Invalid);
+        return std::make_pair(RequestId(), HttpStatusCodes::Invalid);
     }
     m_pendingRequests.remove(requestId);
     m_pendingReplies.remove(reply);
@@ -228,7 +222,7 @@ std::pair<AsyncRestClient::RequestId, int> AsyncRestClient::receiveNetworkReply(
                 << "failed:"
                 << errorMessage;
         emit networkRequestFailed(requestId, std::move(errorMessage));
-        return std::make_pair(INVALID_REQUEST_ID, HttpStatusCodes::Invalid);
+        return std::make_pair(RequestId(), HttpStatusCodes::Invalid);
     }
 
     if (kLogger.debugEnabled()) {

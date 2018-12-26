@@ -21,7 +21,6 @@ Agent::Agent(
     : QObject(parent),
       m_subsystem(std::move(subsystem)) {
     connect(m_subsystem, &Subsystem::collectionsChanged, this, &Agent::collectionsChanged);
-    connect(m_subsystem, &Subsystem::searchTracksResult, this, &Agent::searchTracksResult);
 }
 
 void Agent::collectionsChanged(int flags) {
@@ -60,14 +59,6 @@ void Agent::collectionsChanged(int flags) {
         kLogger.info()
                 << "Active collection"
                 << m_subsystem->activeCollection();
-    }
-}
-
-void Agent::searchTracksResult(
-        QVector<AoideTrackEntity> result) {
-    // TODO: Remove this log output or the entire slot function
-    for (const auto& track: qAsConst(result)) {
-        kLogger.info() << track;
     }
 }
 

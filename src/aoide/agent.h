@@ -2,8 +2,6 @@
 
 #include <QPointer>
 
-#include "aoide/domain.h"
-
 namespace mixxx {
 
 namespace aoide {
@@ -22,8 +20,6 @@ class Agent: public QObject {
   private /*peer*/ slots:
     void /*Subsystem*/ collectionsChanged(
             int flags);
-    void /*Subsystem*/ searchTracksResult(
-            QVector<AoideTrackEntity> result);
 
   private:
     const QPointer<Subsystem> m_subsystem;

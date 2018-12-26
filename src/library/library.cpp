@@ -43,6 +43,7 @@
 #include "library/asynctrackloader.h"
 
 #include "aoide/agent.h"
+#include "aoide/libraryfeature.h"
 #include "aoide/subsystem.h"
 
 
@@ -77,6 +78,7 @@ Library::Library(
       m_pTrackCollection(new TrackCollection(pConfig)),
       m_trackLoader(new mixxx::AsyncTrackLoader(m_pTrackCollection, this)),
       m_aoideSubsystem(new mixxx::aoide::Subsystem(pConfig, m_trackLoader, this)),
+      m_aoideLibraryFeature(new mixxx::aoide::LibraryFeature(m_aoideSubsystem, pConfig, this)),
       m_aoideAgent(new mixxx::aoide::Agent(m_aoideSubsystem, this)),
       m_pLibraryControl(new LibraryControl(this)),
       m_pMixxxLibraryFeature(nullptr),
@@ -168,6 +170,8 @@ Library::Library(
         pConfig->getValue(ConfigKey(kConfigGroup,"ShowTraktorLibrary"), true)) {
         addFeature(new TraktorFeature(this, m_pTrackCollection));
     }
+
+    addFeature(m_aoideLibraryFeature);
 
     // On startup we need to check if all of the user's library folders are
     // accessible to us. If the user is using a database from <1.12.0 with

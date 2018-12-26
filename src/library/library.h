@@ -42,6 +42,7 @@ class AsyncTrackLoader;
 namespace aoide {
 
 class Agent;
+class LibraryFeature;
 class Subsystem;
 
 }
@@ -164,6 +165,7 @@ class Library: public QObject,
     QPointer<mixxx::AsyncTrackLoader> m_trackLoader;
 
     QPointer<mixxx::aoide::Subsystem> m_aoideSubsystem;
+    QPointer<mixxx::aoide::LibraryFeature> m_aoideLibraryFeature;
     QPointer<mixxx::aoide::Agent> m_aoideAgent;
 
     LibraryControl* m_pLibraryControl;

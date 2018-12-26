@@ -30,6 +30,8 @@ class Subsystem: public QObject {
             QObject* parent = nullptr);
     ~Subsystem() override = default;
 
+    typedef AsyncRestClient::RequestId RequestId;
+
     void startup(
             QThread::Priority threadPriority = QThread::LowPriority);
     void shutdown();
@@ -54,8 +56,8 @@ class Subsystem: public QObject {
     void deleteCollectionAsync(
             QString collectionUid);
 
-    // Not thread-safe despite async -> use active collection!
-    void searchTracksAsync(
+    // Not thread-safe despite "async" -> uses active collection member!
+    RequestId searchTracksAsync(
             QString phraseQuery = QString(),
             AoidePagination pagination = AoidePagination());
     void replaceTracksAsync(
@@ -71,7 +73,9 @@ class Subsystem: public QObject {
   signals:
     void collectionsChanged(int flags);
 
-    void searchTracksResult(QVector<AoideTrackEntity> result);
+    void searchTracksResult(
+            mixxx::AsyncRestClient::RequestId requestId,
+            QVector<AoideTrackEntity> result);
 
     void replaceTracksProgress(int queued, int pending, int succeeded, int failed);
 
