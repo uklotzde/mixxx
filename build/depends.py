@@ -1079,6 +1079,8 @@ class MixxxCore(Feature):
                    "src/aoide/transformers.cpp",
                    "src/aoide/translator.cpp",
 
+                   "src/aoide/customtransformers.cpp",
+
                    "src/widget/wwaveformviewer.cpp",
 
                    "src/waveform/sharedglcontext.cpp",

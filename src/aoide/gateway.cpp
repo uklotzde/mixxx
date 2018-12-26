@@ -382,6 +382,7 @@ void Gateway::searchTracksNetworkReplyFinished() {
             AoideTrackEntity trackEntity(jsonValue.toObject());
             AoideTrack track = trackEntity.body();
             track = MultiGenreTagger(m_settings).importTrack(std::move(track));
+            track = CustomCommentsTransformer().importTrack(std::move(track));
             // TODO: Add more transformers here
             trackEntity.setBody(std::move(track));
             result.append(std::move(trackEntity));
@@ -408,6 +409,7 @@ void Gateway::replaceTracks(
     QJsonArray jsonReplacements;
     for (auto track : qAsConst(tracks)) {
         track = MultiGenreTagger(m_settings).exportTrack(std::move(track));
+        track = CustomCommentsTransformer().exportTrack(std::move(track));
         // TODO: Add more transformers here
 
         jsonReplacements += QJsonObject{
