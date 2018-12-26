@@ -35,14 +35,19 @@
 #include "util/parented_ptr.h"
 #include "util/desktophelper.h"
 
+#include "aoide/subsystem.h"
+
 WTrackTableView::WTrackTableView(QWidget * parent,
                                  UserSettingsPointer pConfig,
-                                 TrackCollection* pTrackCollection, bool sorting)
+                                 TrackCollection* pTrackCollection,
+                                 QPointer<mixxx::aoide::Subsystem> aoideSubsystem,
+                                 bool sorting)
         : WLibraryTableView(parent, pConfig,
                             ConfigKey(LIBRARY_CONFIGVALUE,
                                       WTRACKTABLEVIEW_VSCROLLBARPOS_KEY)),
           m_pConfig(pConfig),
           m_pTrackCollection(pTrackCollection),
+          m_aoideSubsystem(std::move(aoideSubsystem)),
           m_sorting(sorting),
           m_iCoverSourceColumn(-1),
           m_iCoverTypeColumn(-1),
@@ -143,6 +148,7 @@ WTrackTableView::~WTrackTableView() {
     delete m_pImportMetadataFromFileAct;
     delete m_pImportMetadataFromMusicBrainzAct;
     delete m_pExportMetadataAct;
+    delete m_pSendMetadataToAoideAct;
     delete m_pAddToPreviewDeck;
     delete m_pAutoDJBottomAct;
     delete m_pAutoDJTopAct;
@@ -473,6 +479,10 @@ void WTrackTableView::createActions() {
     m_pExportMetadataAct = new QAction(tr("Export To File Tags"), this);
     connect(m_pExportMetadataAct, SIGNAL(triggered()),
             this, SLOT(slotExportTrackMetadataIntoFileTags()));
+
+    m_pSendMetadataToAoideAct = new QAction(tr("Send to aoide"), this);
+    connect(m_pSendMetadataToAoideAct, SIGNAL(triggered()),
+            this, SLOT(slotSendMetadataToAoide()));
 
     m_pAddToPreviewDeck = new QAction(tr("Preview Deck"), this);
     // currently there is only one preview deck so just map it here.
@@ -907,6 +917,10 @@ void WTrackTableView::contextMenuEvent(QContextMenuEvent* event) {
         m_pImportMetadataFromMusicBrainzAct->setEnabled(oneSongSelected);
         m_pMetadataMenu->addAction(m_pImportMetadataFromMusicBrainzAct);
         m_pMetadataMenu->addAction(m_pExportMetadataAct);
+        if (m_aoideSubsystem) {
+            m_pSendMetadataToAoideAct->setEnabled(m_aoideSubsystem->hasActiveCollection());
+            m_pMetadataMenu->addAction(m_pSendMetadataToAoideAct);
+        }
 
         m_pClearMetadataMenu->clear();
 
@@ -1508,6 +1522,33 @@ void WTrackTableView::slotExportTrackMetadataIntoFileTags() {
             pTrack->markForMetadataExport();
         }
     }
+}
+
+void WTrackTableView::slotSendMetadataToAoide() {
+    if (!modelHasCapabilities(TrackModel::TRACKMODELCAPS_EDITMETADATA)) {
+        return;
+    }
+
+    TrackModel* pTrackModel = getTrackModel();
+    if (!pTrackModel) {
+        return;
+    }
+
+    const QModelIndexList indices = selectionModel()->selectedRows();
+    if (indices.isEmpty()) {
+        return;
+    }
+
+    QList<TrackRef> trackRefs;
+    trackRefs.reserve(indices.size());
+    for (const QModelIndex& index : indices) {
+        trackRefs.append(
+                TrackRef::fromFileInfo(
+                        pTrackModel->getTrackLocation(index),
+                        pTrackModel->getTrackId(index)));
+    }
+
+    m_aoideSubsystem->replaceTracksAsync(std::move(trackRefs));
 }
 
 //slot for reset played count, sets count to 0 of one or more tracks

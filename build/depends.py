@@ -1062,6 +1062,17 @@ class MixxxCore(Feature):
 
                    "src/library/asynctrackloader.cpp",
 
+                   "src/network/asyncrestclient.cpp",
+
+                   "src/aoide/agent.cpp",
+                   "src/aoide/domain.cpp",
+                   "src/aoide/gateway.cpp",
+                   "src/aoide/settings.cpp",
+                   "src/aoide/subsystem.cpp",
+                   "src/aoide/trackreplacementscheduler.cpp",
+                   "src/aoide/transformers.cpp",
+                   "src/aoide/translator.cpp",
+
                    "src/widget/wwaveformviewer.cpp",
 
                    "src/waveform/sharedglcontext.cpp",

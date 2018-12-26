@@ -42,6 +42,9 @@
 
 #include "library/asynctrackloader.h"
 
+#include "aoide/agent.h"
+#include "aoide/subsystem.h"
+
 
 namespace {
 
@@ -73,6 +76,8 @@ Library::Library(
       m_pSidebarModel(new SidebarModel(parent)),
       m_pTrackCollection(new TrackCollection(pConfig)),
       m_trackLoader(new mixxx::AsyncTrackLoader(m_pTrackCollection, this)),
+      m_aoideSubsystem(new mixxx::aoide::Subsystem(pConfig, m_trackLoader, this)),
+      m_aoideAgent(new mixxx::aoide::Agent(m_aoideSubsystem, this)),
       m_pLibraryControl(new LibraryControl(this)),
       m_pMixxxLibraryFeature(nullptr),
       m_pPlaylistFeature(nullptr),
@@ -188,6 +193,8 @@ Library::Library(
     m_editMetadataSelectedClick = m_pConfig->getValue(
             ConfigKey(kConfigGroup, "EditMetadataSelectedClick"),
             PREF_LIBRARY_EDIT_METADATA_DEFAULT);
+
+    m_aoideSubsystem->startup();
 }
 
 Library::~Library() {
@@ -202,6 +209,8 @@ Library::~Library() {
     }
 
     delete m_pLibraryControl;
+
+    m_aoideSubsystem->shutdown();
 
     kLogger.info() << "Disconnecting database";
     m_pTrackCollection->disconnectDatabase();
@@ -248,7 +257,7 @@ void Library::bindSidebarWidget(WLibrarySidebar* pSidebarWidget) {
 void Library::bindWidget(WLibrary* pLibraryWidget,
                          KeyboardEventFilter* pKeyboard) {
     WTrackTableView* pTrackTableView =
-            new WTrackTableView(pLibraryWidget, m_pConfig, m_pTrackCollection);
+            new WTrackTableView(pLibraryWidget, m_pConfig, m_pTrackCollection, m_aoideSubsystem);
     pTrackTableView->installEventFilter(pKeyboard);
     connect(this, SIGNAL(showTrackModel(QAbstractItemModel*)),
             pTrackTableView, SLOT(loadTrackModel(QAbstractItemModel*)));

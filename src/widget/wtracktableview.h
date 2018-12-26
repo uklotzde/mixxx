@@ -20,6 +20,12 @@ class DlgTrackInfo;
 class TrackCollection;
 class WCoverArtMenu;
 
+namespace mixxx {
+namespace aoide {
+class Subsystem;
+}
+}
+
 const QString WTRACKTABLEVIEW_VSCROLLBARPOS_KEY = "VScrollBarPos"; /** ConfigValue key for QTable vertical scrollbar position */
 const QString LIBRARY_CONFIGVALUE = "[Library]"; /** ConfigValue "value" (wtf) for library stuff */
 
@@ -27,8 +33,12 @@ const QString LIBRARY_CONFIGVALUE = "[Library]"; /** ConfigValue "value" (wtf) f
 class WTrackTableView : public WLibraryTableView {
     Q_OBJECT
   public:
-    WTrackTableView(QWidget* parent, UserSettingsPointer pConfig,
-                    TrackCollection* pTrackCollection, bool sorting = true);
+    WTrackTableView(
+            QWidget* parent,
+            UserSettingsPointer pConfig,
+            TrackCollection* pTrackCollection,
+            QPointer<mixxx::aoide::Subsystem> aoideSubsystem = QPointer<mixxx::aoide::Subsystem>(),
+            bool sorting = true);
     ~WTrackTableView() override;
     void contextMenuEvent(QContextMenuEvent * event) override;
     void onSearch(const QString& text) override;
@@ -64,6 +74,7 @@ class WTrackTableView : public WLibraryTableView {
     void slotShowTrackInTagFetcher(TrackPointer track);
     void slotImportTrackMetadataFromFileTags();
     void slotExportTrackMetadataIntoFileTags();
+    void slotSendMetadataToAoide();
     void slotPopulatePlaylistMenu();
     void addSelectionToPlaylist(int iPlaylistId);
     void updateSelectionCrates(QWidget* qc);
@@ -120,6 +131,8 @@ class WTrackTableView : public WLibraryTableView {
     UserSettingsPointer m_pConfig;
     TrackCollection* m_pTrackCollection;
 
+    QPointer<mixxx::aoide::Subsystem> m_aoideSubsystem;
+
     QSignalMapper m_loadTrackMapper;
 
     QScopedPointer<DlgTrackInfo> m_pTrackInfo;
@@ -155,6 +168,8 @@ class WTrackTableView : public WLibraryTableView {
 
     // Save Track Metadata Action:
     QAction *m_pExportMetadataAct;
+
+    QAction *m_pSendMetadataToAoideAct;
 
     // Load Track to PreviewDeck
     QAction* m_pAddToPreviewDeck;

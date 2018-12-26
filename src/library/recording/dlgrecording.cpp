@@ -20,7 +20,7 @@ DlgRecording::DlgRecording(QWidget* parent, UserSettingsPointer pConfig,
           m_durationRecordedStr("--:--"),
           m_pRecordingManager(pRecordingManager) {
     setupUi(this);
-    m_pTrackTableView = new WTrackTableView(this, pConfig, m_pTrackCollection, true);
+    m_pTrackTableView = new WTrackTableView(this, pConfig, m_pTrackCollection, QPointer<mixxx::aoide::Subsystem>(), true);
     m_pTrackTableView->installEventFilter(pKeyboard);
 
     connect(m_pTrackTableView, SIGNAL(loadTrack(TrackPointer)),
