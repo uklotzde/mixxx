@@ -19,6 +19,7 @@
 #include "library/parsercsv.h"
 #include "util/sandbox.h"
 #include "mixer/playermanager.h"
+#include "track/trackref.h"
 
 class DragAndDropHelper {
   public:
@@ -123,7 +124,7 @@ class DragAndDropHelper {
     static QDrag* dragTrack(TrackPointer pTrack, QWidget* pDragSource,
                             QString sourceIdentifier) {
         QList<QUrl> locationUrls;
-        locationUrls.append(urlFromLocation(pTrack->getLocation()));
+        locationUrls.append(pTrack->getLocationUrl());
         return dragUrls(locationUrls, pDragSource, sourceIdentifier);
     }
 
@@ -132,13 +133,9 @@ class DragAndDropHelper {
                                      QString sourceIdentifier) {
         QList<QUrl> locationUrls;
         foreach (QString location, locations) {
-            locationUrls.append(urlFromLocation(location));
+            locationUrls.append(TrackRef::locationUrl(location));
         }
         return dragUrls(locationUrls, pDragSource, sourceIdentifier);
-    }
-
-    static QUrl urlFromLocation(const QString& trackLocation) {
-        return QUrl::fromLocalFile(trackLocation);
     }
 
   private:
