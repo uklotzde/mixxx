@@ -63,6 +63,7 @@ available_features = [features.Mad,
                       features.FFMPEG,
 
                       # Experimental features
+                      features.FFMPEG4,
                       features.OpenGLES,
                       features.QtKeychain
                       ]
