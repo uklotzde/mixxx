@@ -17,8 +17,7 @@ DlgAutoDJ::DlgAutoDJ(QWidget* parent,
           Ui::DlgAutoDJ(),
           m_pAutoDJProcessor(pProcessor),
           // no sorting
-          m_pTrackTableView(new WTrackTableView(this, pConfig,
-                                                pTrackCollection, false)),
+          m_pTrackTableView(new WTrackTableView(this, pConfig, pTrackCollection)),
           m_pAutoDJTableModel(NULL) {
     setupUi(this);
 

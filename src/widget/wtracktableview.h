@@ -20,6 +20,12 @@ class DlgTrackInfo;
 class TrackCollection;
 class WCoverArtMenu;
 
+namespace mixxx {
+namespace aoide {
+class Subsystem;
+}
+}
+
 const QString WTRACKTABLEVIEW_VSCROLLBARPOS_KEY = "VScrollBarPos"; /** ConfigValue key for QTable vertical scrollbar position */
 const QString LIBRARY_CONFIGVALUE = "[Library]"; /** ConfigValue "value" (wtf) for library stuff */
 
@@ -27,8 +33,12 @@ const QString LIBRARY_CONFIGVALUE = "[Library]"; /** ConfigValue "value" (wtf) f
 class WTrackTableView : public WLibraryTableView {
     Q_OBJECT
   public:
-    WTrackTableView(QWidget* parent, UserSettingsPointer pConfig,
-                    TrackCollection* pTrackCollection, bool sorting = true);
+    WTrackTableView(
+            QWidget* parent,
+            UserSettingsPointer pConfig,
+            TrackCollection* pTrackCollection,
+            QPointer<mixxx::aoide::Subsystem> aoideSubsystem = QPointer<mixxx::aoide::Subsystem>(),
+            bool sorting = true);
     ~WTrackTableView() override;
     void contextMenuEvent(QContextMenuEvent * event) override;
     void onSearch(const QString& text) override;
@@ -64,6 +74,7 @@ class WTrackTableView : public WLibraryTableView {
     void slotShowTrackInTagFetcher(TrackPointer track);
     void slotImportTrackMetadataFromFileTags();
     void slotExportTrackMetadataIntoFileTags();
+    void slotSendMetadataToAoide();
     void slotPopulatePlaylistMenu();
     void addSelectionToPlaylist(int iPlaylistId);
     void updateSelectionCrates(QWidget* qc);
@@ -94,6 +105,9 @@ class WTrackTableView : public WLibraryTableView {
     void slotTrackInfoClosed();
     void slotTagFetcherClosed();
 
+    void slotAppendCommentTag();
+    void slotRemoveCommentTag();
+
   private:
 
     void sendToAutoDJ(PlaylistDAO::AutoDJSendLoc loc);
@@ -109,6 +123,9 @@ class WTrackTableView : public WLibraryTableView {
     void selectionChanged(const QItemSelection &selected,
                           const QItemSelection &deselected) override;
 
+    void appendCommentTag(const QString& tag, const QString& sep);
+    void removeCommentTag(const QString& tag, const QString& sep);
+
     // Mouse move event, implemented to hide the text and show an icon instead
     // when dragging.
     void mouseMoveEvent(QMouseEvent *pEvent) override;
@@ -119,6 +136,8 @@ class WTrackTableView : public WLibraryTableView {
 
     UserSettingsPointer m_pConfig;
     TrackCollection* m_pTrackCollection;
+
+    QPointer<mixxx::aoide::Subsystem> m_aoideSubsystem;
 
     QSignalMapper m_loadTrackMapper;
 
@@ -155,6 +174,11 @@ class WTrackTableView : public WLibraryTableView {
 
     // Save Track Metadata Action:
     QAction *m_pExportMetadataAct;
+
+    QAction *m_pSendMetadataToAoideAct;
+
+    QAction *m_pAppendCommentTagAct;
+    QAction *m_pRemoveCommentTagAct;
 
     // Load Track to PreviewDeck
     QAction* m_pAddToPreviewDeck;

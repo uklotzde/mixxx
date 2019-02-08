@@ -56,6 +56,10 @@ public:
     TrackRecord& operator=(TrackRecord&&) = default;
     TrackRecord& operator=(const TrackRecord&) = default;
 
+    bool hasRating() const {
+        return getRating() > 0;
+    }
+
     void setKeys(const Keys& keys);
     void resetKeys() {
         setKeys(Keys());

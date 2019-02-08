@@ -35,6 +35,20 @@ class LibraryControl;
 class KeyboardEventFilter;
 class PlayerManager;
 
+namespace mixxx {
+
+class AsyncTrackLoader;
+
+namespace aoide {
+
+class Agent;
+class LibraryFeature;
+class Subsystem;
+
+}
+
+}
+
 class Library: public QObject,
     public virtual /*implements*/ GlobalTrackCacheSaver {
     Q_OBJECT
@@ -145,7 +159,15 @@ class Library: public QObject,
     const mixxx::DbConnectionPoolPtr m_pDbConnectionPool;
 
     SidebarModel* m_pSidebarModel;
+
     TrackCollection* m_pTrackCollection;
+
+    QPointer<mixxx::AsyncTrackLoader> m_trackLoader;
+
+    QPointer<mixxx::aoide::Subsystem> m_aoideSubsystem;
+    QPointer<mixxx::aoide::LibraryFeature> m_aoideLibraryFeature;
+    QPointer<mixxx::aoide::Agent> m_aoideAgent;
+
     LibraryControl* m_pLibraryControl;
     QList<LibraryFeature*> m_features;
     const static QString m_sTrackViewName;

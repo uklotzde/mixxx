@@ -8,6 +8,8 @@
 
 class AnalyzerEbur128 : public Analyzer {
   public:
+    static constexpr double kReplayGain2ReferenceLUFS = -18;
+
     AnalyzerEbur128(UserSettingsPointer pConfig);
     virtual ~AnalyzerEbur128();
 

@@ -213,6 +213,9 @@ class Qt(Dependence):
             'QtGui',
             'QtNetwork',
             'QtOpenGL',
+            'QtQml',
+            'QtQuick',
+            'QtQuickWidgets',
             'QtScript',
             'QtScriptTools',
             'QtSql',
@@ -1059,6 +1062,24 @@ class MixxxCore(Feature):
                    "src/library/parserpls.cpp",
                    "src/library/parserm3u.cpp",
                    "src/library/parsercsv.cpp",
+
+                   "src/library/asynctrackloader.cpp",
+
+                   "src/network/asyncrestclient.cpp",
+
+                   "src/aoide/agent.cpp",
+                   "src/aoide/domain.cpp",
+                   "src/aoide/gateway.cpp",
+                   "src/aoide/libraryfeature.cpp",
+                   "src/aoide/tracklistmodel.cpp",
+                   "src/aoide/tracklistview.cpp",
+                   "src/aoide/settings.cpp",
+                   "src/aoide/subsystem.cpp",
+                   "src/aoide/trackreplacementscheduler.cpp",
+                   "src/aoide/transformers.cpp",
+                   "src/aoide/translator.cpp",
+
+                   "src/aoide/customtransformers.cpp",
 
                    "src/widget/wwaveformviewer.cpp",
 
