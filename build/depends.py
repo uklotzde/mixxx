@@ -1230,6 +1230,7 @@ class MixxxCore(Feature):
                    "src/util/db/sqlqueryfinisher.cpp",
                    "src/util/db/sqlstringformatter.cpp",
                    "src/util/db/sqltransaction.cpp",
+                   "src/util/dnd.cpp",
                    "src/util/sample.cpp",
                    "src/util/samplebuffer.cpp",
                    "src/util/readaheadsamplebuffer.cpp",
