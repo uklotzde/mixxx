@@ -27,6 +27,7 @@
 #include "widget/controlwidgetconnection.h"
 #include "track/track.h"
 #include "analyzer/analyzerprogress.h"
+#include "mixer/playermanager.h"
 #include "util/math.h"
 #include "util/timer.h"
 #include "util/dnd.h"
