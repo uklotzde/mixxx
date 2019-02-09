@@ -67,7 +67,7 @@ TEST_F(AoideExportTest, ExportTrack) {
     const QFileInfo testFile(kTestDir.absoluteFilePath("cover-test.flac"));
     ASSERT_TRUE(testFile.exists());
 
-    TrackPointer trackPtr = Track::newTemporary(testFile);
+    TrackPointer trackPtr = Track::newTemporary(TrackFile(testFile));
 
     trackPtr->setTitle("Track Title");
     trackPtr->setArtist("Track Artist");

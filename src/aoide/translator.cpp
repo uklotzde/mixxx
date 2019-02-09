@@ -142,7 +142,7 @@ AoideTrack Translator::exportTrack(const Track& track) const {
     audioContent.setEncoder(std::move(audioEncoder));
 
     QJsonObject trackSource{
-            {"contentUri", track.getLocationUri()},
+            {"contentUri", track.getFileInfo().locationUri()},
             {"contentType", QMimeDatabase().mimeTypeForFile(track.getLocation()).name()},
             {"audioContent", audioContent.intoJsonObject()},
     };
