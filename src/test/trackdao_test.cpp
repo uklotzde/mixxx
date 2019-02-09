@@ -17,8 +17,8 @@ TEST_F(TrackDAOTest, detectMovedTracks) {
     QString oldFile(QDir::tempPath() + "/old/" + filename);
     QString newFile(QDir::tempPath() + "/new/" + filename);
 
-    TrackPointer pOldTrack = Track::newTemporary(oldFile);
-    TrackPointer pNewTrack = Track::newTemporary(newFile);
+    TrackPointer pOldTrack = Track::newTemporary(TrackFile(oldFile));
+    TrackPointer pNewTrack = Track::newTemporary(TrackFile(newFile));
 
     // Arbitrary duration
     pOldTrack->setDuration(135);

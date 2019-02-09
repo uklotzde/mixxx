@@ -764,9 +764,9 @@ TEST_F(SearchQueryParserTest, CrateFilter) {
 
     // Add the track in the collection
     TrackId trackAId = addTrackToCollection(kTrackALocationTest);
-    TrackPointer pTrackA(Track::newDummy(kTrackALocationTest, trackAId));
+    TrackPointer pTrackA(Track::newDummy(TrackFile(kTrackALocationTest), trackAId));
     TrackId trackBId = addTrackToCollection(kTrackBLocationTest);
-    TrackPointer pTrackB(Track::newDummy(kTrackBLocationTest, trackBId));
+    TrackPointer pTrackB(Track::newDummy(TrackFile(kTrackBLocationTest), trackBId));
 
     // Add track A to the newly created crate
     QList<TrackId> trackIds;
@@ -810,11 +810,11 @@ TEST_F(SearchQueryParserTest, ShortCrateFilter) {
 
     // Add the track in the collection
     TrackId trackAId = addTrackToCollection(kTrackALocationTest);
-    TrackPointer pTrackA(Track::newDummy(kTrackALocationTest, trackAId));
+    TrackPointer pTrackA(Track::newDummy(TrackFile(kTrackALocationTest), trackAId));
     TrackId trackBId = addTrackToCollection(kTrackBLocationTest);
-    TrackPointer pTrackB(Track::newDummy(kTrackBLocationTest, trackBId));
+    TrackPointer pTrackB(Track::newDummy(TrackFile(kTrackBLocationTest), trackBId));
     TrackId trackCId = addTrackToCollection(kTrackCLocationTest);
-    TrackPointer pTrackC(Track::newDummy(kTrackCLocationTest, trackCId));
+    TrackPointer pTrackC(Track::newDummy(TrackFile(kTrackCLocationTest), trackCId));
     pTrackC->setComment("garbage somecrate garbage");
 
     // Add track A to the newly created crate
@@ -864,9 +864,9 @@ TEST_F(SearchQueryParserTest, CrateFilterQuote){
 
     // Add the tracks in the collection
     TrackId trackAId = addTrackToCollection(kTrackALocationTest);
-    TrackPointer pTrackA(Track::newDummy(kTrackALocationTest, trackAId));
+    TrackPointer pTrackA(Track::newDummy(TrackFile(kTrackALocationTest), trackAId));
     TrackId trackBId = addTrackToCollection(kTrackBLocationTest);
-    TrackPointer pTrackB(Track::newDummy(kTrackBLocationTest, trackBId));
+    TrackPointer pTrackB(Track::newDummy(TrackFile(kTrackBLocationTest), trackBId));
 
     // Add track A to the newly created crate
     QList<TrackId> trackIds;
@@ -908,9 +908,9 @@ TEST_F(SearchQueryParserTest, CrateFilterWithOther){
 
     // Add the tracks in the collection
     TrackId trackAId = addTrackToCollection(kTrackALocationTest);
-    TrackPointer pTrackA(Track::newDummy(kTrackALocationTest, trackAId));
+    TrackPointer pTrackA(Track::newDummy(TrackFile(kTrackALocationTest), trackAId));
     TrackId trackBId = addTrackToCollection(kTrackBLocationTest);
-    TrackPointer pTrackB(Track::newDummy(kTrackBLocationTest, trackBId));
+    TrackPointer pTrackB(Track::newDummy(TrackFile(kTrackBLocationTest), trackBId));
 
     // Add trackA to the newly created crate
     QList<TrackId> trackIds;
@@ -957,9 +957,9 @@ TEST_F(SearchQueryParserTest, CrateFilterWithCrateFilterAndNegation){
 
     // Add the tracks in the collection
     TrackId trackAId = addTrackToCollection(kTrackALocationTest);
-    TrackPointer pTrackA(Track::newDummy(kTrackALocationTest, trackAId));
+    TrackPointer pTrackA(Track::newDummy(TrackFile(kTrackALocationTest), trackAId));
     TrackId trackBId = addTrackToCollection(kTrackBLocationTest);
-    TrackPointer pTrackB(Track::newDummy(kTrackBLocationTest, trackBId));
+    TrackPointer pTrackB(Track::newDummy(TrackFile(kTrackBLocationTest), trackBId));
 
     // Add trackA and trackB to crate A
     QList<TrackId> trackIdsA;

@@ -174,7 +174,7 @@ QDrag* DragAndDropHelper::dragTrack(
         QWidget* pDragSource,
         QString sourceIdentifier) {
     QList<QUrl> locationUrls;
-    locationUrls.append(pTrack->getLocationUrl());
+    locationUrls.append(pTrack->getFileInfo().locationUrl());
     return dragUrls(locationUrls, pDragSource, sourceIdentifier);
 }
 
@@ -185,7 +185,7 @@ QDrag* DragAndDropHelper::dragTrackLocations(
         QString sourceIdentifier) {
     QList<QUrl> locationUrls;
     foreach (QString location, locations) {
-        locationUrls.append(TrackRef::locationUrl(location));
+        locationUrls.append(TrackFile(location).locationUrl());
     }
     return dragUrls(locationUrls, pDragSource, sourceIdentifier);
 }

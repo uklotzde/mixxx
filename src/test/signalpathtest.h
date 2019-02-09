@@ -228,7 +228,7 @@ class SignalPathTest : public BaseSignalPathTest {
   protected:
     SignalPathTest() {
         const QString kTrackLocationTest = QDir::currentPath() + "/src/test/sine-30.wav";
-        TrackPointer pTrack(Track::newTemporary(kTrackLocationTest));
+        TrackPointer pTrack(Track::newTemporary(TrackFile(kTrackLocationTest)));
 
         loadTrack(m_pMixerDeck1, pTrack);
         loadTrack(m_pMixerDeck2, pTrack);

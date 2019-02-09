@@ -469,7 +469,7 @@ void LibraryScanner::slotAddNewTrack(const QString& trackPath) {
     //kLogger.debug() << "slotAddNewTrack" << trackPath;
     ScopedTimer timer("LibraryScanner::addNewTrack");
     // For statistics tracking and to detect moved tracks
-    TrackPointer pTrack(m_trackDao.addTracksAddFile(trackPath, false));
+    TrackPointer pTrack(m_trackDao.addTracksAddFile(TrackFile(trackPath), false));
     if (pTrack) {
         // The track's actual location might differ from the
         // given trackPath
