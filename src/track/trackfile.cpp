@@ -53,3 +53,7 @@ QString TrackFile::locationUri() const {
 QString TrackFile::canonicalLocationUri() const {
     return uriFromUrl(canonicalLocationUrl());
 }
+
+QDebug operator<<(QDebug debug, const TrackFile& trackFile) {
+    return debug << static_cast<const QFileInfo&>(trackFile);
+}

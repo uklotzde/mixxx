@@ -719,7 +719,7 @@ void AutoDJProcessor::calculateTransition(DeckAttributes* pFromDeck,
             // TODO(rryan): Duration is super inaccurate! We should be using
             // track_samples / track_samplerate instead.
             double fromTrackDuration = fromTrack->getDuration();
-            qDebug() << fromTrack->getLocation()
+            qDebug() << fromTrack->getFileInfo()
                     << "fromTrackDuration =" << fromTrackDuration;
 
             // The track might be shorter than the transition period. Use a
@@ -733,7 +733,7 @@ void AutoDJProcessor::calculateTransition(DeckAttributes* pFromDeck,
                     // TODO(rryan): Duration is super inaccurate! We should be using
                     // track_samples / track_samplerate instead.
                     double toTrackDuration = toTrack->getDuration();
-                    qDebug() << toTrack->getLocation()
+                    qDebug() << toTrack->getFileInfo()
                             << "toTrackDuration = " << toTrackDuration;
                     m_nextTransitionTime = math_min(m_nextTransitionTime,
                                                     toTrackDuration / 2);
@@ -783,8 +783,8 @@ void AutoDJProcessor::playerLoadingTrack(DeckAttributes* pDeck,
         TrackPointer pNewTrack, TrackPointer pOldTrack) {
     if (sDebug) {
         qDebug() << this << "playerLoadingTrack" << pDeck->group
-                 << "new:"<< (pNewTrack ? pNewTrack->getLocation() : "(null)")
-                 << "old:"<< (pOldTrack ? pOldTrack->getLocation() : "(null)");
+                 << "new:"<< (pNewTrack ? pNewTrack->getFileInfo() : TrackFile())
+                 << "old:"<< (pOldTrack ? pOldTrack->getFileInfo() : TrackFile());
     }
 
     // The Deck is loading an new track
