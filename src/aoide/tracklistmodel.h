@@ -54,7 +54,7 @@ class TrackListModel: public QAbstractListModel {
     QModelIndex parent(const QModelIndex& index) const override;
 
     const Item& itemAt(const QModelIndex& index) const;
-    QVariant itemData(const Item& item, ItemDataRole role) const;
+    QVariant itemDataForRole(const Item& item, ItemDataRole role) const;
 
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 

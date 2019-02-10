@@ -169,7 +169,7 @@ const TrackListModel::Item& TrackListModel::itemAt(const QModelIndex& index) con
     return itemPage.m_items[pageRow];
 }
 
-QVariant TrackListModel::itemData(const Item& item, ItemDataRole role) const {
+QVariant TrackListModel::itemDataForRole(const Item& item, ItemDataRole role) const {
     switch (role) {
     case ItemDataRole::Uid:
         return item.header().uid();
@@ -257,13 +257,13 @@ QVariant TrackListModel::data(const QModelIndex& index, int role) const {
     switch (role) {
     case Qt::DisplayRole:
         // TODO: What data should be returned here???
-        return itemData(item, ItemDataRole::ContentUrl);
+        return itemDataForRole(item, ItemDataRole::ContentUrl);
     case Qt::ToolTipRole:
         // Display the file URL as tooltip
-        return itemData(item, ItemDataRole::ContentUrl);
+        return itemDataForRole(item, ItemDataRole::ContentUrl);
     default:
         if (role >= Qt::UserRole) {
-            return itemData(item, ItemDataRole(role));
+            return itemDataForRole(item, ItemDataRole(role));
         } else {
             // TODO
             return QVariant();
