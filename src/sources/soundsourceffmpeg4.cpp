@@ -1223,7 +1223,7 @@ SoundSourceProviderPriority SoundSourceProviderFFmpeg4::getPriorityHint(
     // TODO: Increase priority to HIGHER if FFmpeg should be used as the
     // default decoder instead of other SoundSources. Currently it is
     // only used as a fallback.
-    return SoundSourceProviderPriority::HIGHER;
+    return SoundSourceProviderPriority::LOWER;
 }
 
 } // namespace mixxx
