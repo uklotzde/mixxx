@@ -219,7 +219,9 @@ AoideTrack Translator::exportTrack(const Track& track) const {
             trackMarker.insert("number", cuePoint->getHotCue());
         }
         insertOptional(&trackMarker, "label", cuePoint->getLabel());
-        insertColor(&trackMarker, "color", cuePoint->getColor());
+        if (cuePoint->getColor()) {
+            insertColor(&trackMarker, "color", cuePoint->getColor()->m_defaultRgba);
+        }
         trackMarkers += std::move(trackMarker);
     }
     if (!hasLoadCue && (trackRecord.getCuePoint() > 0.0)) {
