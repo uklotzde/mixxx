@@ -14,9 +14,7 @@ struct BeatGridData {
 class BeatGridIterator : public BeatIterator {
   public:
     BeatGridIterator(double dBeatLength, double dFirstBeat, double dEndSample)
-            : m_dBeatLength(dBeatLength),
-              m_dCurrentSample(dFirstBeat),
-              m_dEndSample(dEndSample) {
+        : m_dBeatLength(dBeatLength), m_dCurrentSample(dFirstBeat), m_dEndSample(dEndSample) {
     }
 
     virtual bool hasNext() const {
@@ -35,31 +33,26 @@ class BeatGridIterator : public BeatIterator {
     double m_dEndSample;
 };
 
-BeatGrid::BeatGrid(
-        const Track& track,
-        SINT iSampleRate)
-        : m_mutex(QMutex::Recursive),
-          m_iSampleRate(iSampleRate > 0 ? iSampleRate : track.getSampleRate()),
-          m_dBeatLength(0.0) {
+BeatGrid::BeatGrid(const Track& track, SINT iSampleRate)
+    : m_mutex(QMutex::Recursive),
+      m_iSampleRate(iSampleRate > 0 ? iSampleRate : track.getSampleRate()),
+      m_dBeatLength(0.0) {
     // BeatGrid should live in the same thread as the track it is associated
     // with.
     moveToThread(track.thread());
 }
 
-BeatGrid::BeatGrid(
-        const Track& track,
-        SINT iSampleRate,
-        const QByteArray& byteArray)
-        : BeatGrid(track, iSampleRate) {
+BeatGrid::BeatGrid(const Track& track, SINT iSampleRate, const QByteArray& byteArray)
+    : BeatGrid(track, iSampleRate) {
     readByteArray(byteArray);
 }
 
 BeatGrid::BeatGrid(const BeatGrid& other)
-        : m_mutex(QMutex::Recursive),
-          m_subVersion(other.m_subVersion),
-          m_iSampleRate(other.m_iSampleRate),
-          m_grid(other.m_grid),
-          m_dBeatLength(other.m_dBeatLength) {
+    : m_mutex(QMutex::Recursive),
+      m_subVersion(other.m_subVersion),
+      m_iSampleRate(other.m_iSampleRate),
+      m_grid(other.m_grid),
+      m_dBeatLength(other.m_dBeatLength) {
     moveToThread(other.thread());
 }
 
@@ -213,9 +206,8 @@ double BeatGrid::findNthBeat(double dSamples, int n) const {
     return dResult;
 }
 
-bool BeatGrid::findPrevNextBeats(double dSamples,
-                                 double* dpPrevBeatSamples,
-                                 double* dpNextBeatSamples) const {
+bool BeatGrid::findPrevNextBeats(
+        double dSamples, double* dpPrevBeatSamples, double* dpNextBeatSamples) const {
     double dFirstBeatSample;
     double dBeatLength;
     {
@@ -257,13 +249,12 @@ bool BeatGrid::findPrevNextBeats(double dSamples,
     return true;
 }
 
-
 std::unique_ptr<BeatIterator> BeatGrid::findBeats(double startSample, double stopSample) const {
     QMutexLocker locker(&m_mutex);
     if (!isValid() || startSample > stopSample) {
         return std::unique_ptr<BeatIterator>();
     }
-    //qDebug() << "BeatGrid::findBeats startSample" << startSample << "stopSample"
+    // qDebug() << "BeatGrid::findBeats startSample" << startSample << "stopSample"
     //         << stopSample << "beatlength" << m_dBeatLength << "BPM" << bpm();
     double curBeat = findNextBeat(startSample);
     if (curBeat == -1.0) {
@@ -313,20 +304,20 @@ double BeatGrid::getBpmAroundPosition(double curSample, int n) const {
 
 void BeatGrid::addBeat(double dBeatSample) {
     Q_UNUSED(dBeatSample);
-    //QMutexLocker locker(&m_mutex);
+    // QMutexLocker locker(&m_mutex);
     return;
 }
 
 void BeatGrid::removeBeat(double dBeatSample) {
     Q_UNUSED(dBeatSample);
-    //QMutexLocker locker(&m_mutex);
+    // QMutexLocker locker(&m_mutex);
     return;
 }
 
 void BeatGrid::moveBeat(double dBeatSample, double dNewBeatSample) {
     Q_UNUSED(dBeatSample);
     Q_UNUSED(dNewBeatSample);
-    //QMutexLocker locker(&m_mutex);
+    // QMutexLocker locker(&m_mutex);
     return;
 }
 
@@ -345,27 +336,27 @@ void BeatGrid::scale(enum BPMScale scale) {
     double bpm = getBpm();
 
     switch (scale) {
-    case DOUBLE:
-        bpm *= 2;
-        break;
-    case HALVE:
-        bpm *= 1.0 / 2;
-        break;
-    case TWOTHIRDS:
-        bpm *= 2.0 / 3;
-        break;
-    case THREEFOURTHS:
-        bpm *= 3.0 / 4;
-        break;
-    case FOURTHIRDS:
-        bpm *= 4.0 / 3;
-        break;
-    case THREEHALVES:
-        bpm *= 3.0 / 2;
-        break;
-    default:
-        DEBUG_ASSERT(!"scale value invalid");
-        return;
+        case DOUBLE:
+            bpm *= 2;
+            break;
+        case HALVE:
+            bpm *= 1.0 / 2;
+            break;
+        case TWOTHIRDS:
+            bpm *= 2.0 / 3;
+            break;
+        case THREEFOURTHS:
+            bpm *= 3.0 / 4;
+            break;
+        case FOURTHIRDS:
+            bpm *= 4.0 / 3;
+            break;
+        case THREEHALVES:
+            bpm *= 3.0 / 2;
+            break;
+        default:
+            DEBUG_ASSERT(!"scale value invalid");
+            return;
     }
     setBpm(bpm);
 }

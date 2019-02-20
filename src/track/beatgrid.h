@@ -1,11 +1,10 @@
-#ifndef BEATGRID_H
-#define BEATGRID_H
+#pragma once
 
 #include <QMutex>
 
-#include "track/track.h"
-#include "track/beats.h"
 #include "proto/beats.pb.h"
+#include "track/beats.h"
+#include "track/track.h"
 
 #define BEAT_GRID_1_VERSION "BeatGrid-1.0"
 #define BEAT_GRID_2_VERSION "BeatGrid-2.0"
@@ -21,8 +20,7 @@ class BeatGrid final : public Beats {
     // Construct a BeatGrid. If a more accurate sample rate is known, provide it
     // in the iSampleRate parameter -- otherwise pass 0. The BeatGrid will be
     // deserialized from the byte array.
-    BeatGrid(const Track& track, SINT iSampleRate,
-             const QByteArray& byteArray);
+    BeatGrid(const Track& track, SINT iSampleRate, const QByteArray& byteArray);
     ~BeatGrid() override = default;
 
     // Initializes the BeatGrid to have a BPM of dBpm and the first beat offset
@@ -49,9 +47,8 @@ class BeatGrid final : public Beats {
 
     virtual double findNextBeat(double dSamples) const;
     virtual double findPrevBeat(double dSamples) const;
-    virtual bool findPrevNextBeats(double dSamples,
-                                   double* dpPrevBeatSamples,
-                                   double* dpNextBeatSamples) const;
+    virtual bool findPrevNextBeats(
+            double dSamples, double* dpPrevBeatSamples, double* dpNextBeatSamples) const;
     virtual double findClosestBeat(double dSamples) const;
     virtual double findNthBeat(double dSamples, int n) const;
     virtual std::unique_ptr<BeatIterator> findBeats(double startSample, double stopSample) const;
@@ -90,6 +87,3 @@ class BeatGrid final : public Beats {
     // The length of a beat in samples
     double m_dBeatLength;
 };
-
-
-#endif /* BEATGRID_H */

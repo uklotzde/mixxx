@@ -1,18 +1,10 @@
-/*
- * beatmap.h
- *
- *  Created on: 08/dic/2011
- *      Author: vittorio
- */
-
-#ifndef BEATMAP_H_
-#define BEATMAP_H_
+#pragma once
 
 #include <QMutex>
 
-#include "track/track.h"
-#include "track/beats.h"
 #include "proto/beats.pb.h"
+#include "track/beats.h"
+#include "track/track.h"
 
 #define BEAT_MAP_VERSION "BeatMap-1.0"
 
@@ -27,22 +19,19 @@ class BeatMap final : public Beats {
     // sample rate is known than the one associated with the Track. If it is
     // zero then the track's sample rate will be used. The BeatMap will be
     // deserialized from the byte array.
-    BeatMap(const Track& track, SINT iSampleRate,
-            const QByteArray& byteArray);
+    BeatMap(const Track& track, SINT iSampleRate, const QByteArray& byteArray);
     // Construct a BeatMap. iSampleRate may be provided if a more accurate
     // sample rate is known than the one associated with the Track. If it is
     // zero then the track's sample rate will be used. A list of beat locations
     // in audio frames may be provided.
-    BeatMap(const Track& track, SINT iSampleRate,
-            const QVector<double>& beats);
+    BeatMap(const Track& track, SINT iSampleRate, const QVector<double>& beats);
 
     ~BeatMap() override = default;
 
     // See method comments in beats.h
 
     virtual Beats::CapabilitiesFlags getCapabilities() const {
-        return BEATSCAP_TRANSLATE | BEATSCAP_SCALE | BEATSCAP_ADDREMOVE |
-                BEATSCAP_MOVEBEAT;
+        return BEATSCAP_TRANSLATE | BEATSCAP_SCALE | BEATSCAP_ADDREMOVE | BEATSCAP_MOVEBEAT;
     }
 
     virtual QByteArray toByteArray() const;
@@ -57,9 +46,8 @@ class BeatMap final : public Beats {
 
     virtual double findNextBeat(double dSamples) const;
     virtual double findPrevBeat(double dSamples) const;
-    virtual bool findPrevNextBeats(double dSamples,
-                                   double* dpPrevBeatSamples,
-                                   double* dpNextBeatSamples) const;
+    virtual bool findPrevNextBeats(
+            double dSamples, double* dpPrevBeatSamples, double* dpNextBeatSamples) const;
     virtual double findClosestBeat(double dSamples) const;
     virtual double findNthBeat(double dSamples, int n) const;
     virtual std::unique_ptr<BeatIterator> findBeats(double startSample, double stopSample) const;
@@ -86,8 +74,8 @@ class BeatMap final : public Beats {
     void createFromBeatVector(const QVector<double>& beats);
     void onBeatlistChanged();
 
-    double calculateBpm(const mixxx::track::io::Beat& startBeat,
-                        const mixxx::track::io::Beat& stopBeat) const;
+    double calculateBpm(
+            const mixxx::track::io::Beat& startBeat, const mixxx::track::io::Beat& stopBeat) const;
     // For internal use only.
     bool isValid() const;
 
@@ -105,5 +93,3 @@ class BeatMap final : public Beats {
     double m_dLastFrame;
     BeatList m_beats;
 };
-
-#endif /* BEATMAP_H_ */
