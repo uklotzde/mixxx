@@ -1,8 +1,6 @@
 
 #include "track/beats.h"
 
-
-
 int Beats::numBeatsInRange(double dStartSample, double dEndSample) {
     double dLastCountedBeat = 0.0;
     int iBeatsCounter;
@@ -52,4 +50,3 @@ double Beats::findNBeatsFromSample(double fromSample, double beats) const {
 
     return nthBeat;
 };
-
