@@ -364,8 +364,8 @@ bool BeatMap::findPrevNextBeats(
 
 std::unique_ptr<BeatIterator> BeatMap::findBeats(double startSample, double stopSample) const {
     QMutexLocker locker(&m_mutex);
-    // startSample and stopSample are sample offsets, converting them to
-    // frames
+    //startSample and stopSample are sample offsets, converting them to
+    //frames
     if (!isValid() || startSample > stopSample) {
         return std::unique_ptr<BeatIterator>();
     }
@@ -538,41 +538,41 @@ void BeatMap::scale(enum BPMScale scale) {
     }
 
     switch (scale) {
-        case DOUBLE:
-            // introduce a new beat into every gap
-            scaleDouble();
-            break;
-        case HALVE:
-            // remove every second beat
-            scaleHalve();
-            break;
-        case TWOTHIRDS:
-            // introduce a new beat into every gap
-            scaleDouble();
-            // remove every second and third beat
-            scaleThird();
-            break;
-        case THREEFOURTHS:
-            // introduce two beats into every gap
-            scaleTriple();
-            // remove every second third and forth beat
-            scaleFourth();
-            break;
-        case FOURTHIRDS:
-            // introduce three beats into every gap
-            scaleQuadruple();
-            // remove every second third and forth beat
-            scaleThird();
-            break;
-        case THREEHALVES:
-            // introduce two beats into every gap
-            scaleTriple();
-            // remove every second beat
-            scaleHalve();
-            break;
-        default:
-            DEBUG_ASSERT(!"scale value invalid");
-            return;
+    case DOUBLE:
+        // introduce a new beat into every gap
+        scaleDouble();
+        break;
+    case HALVE:
+        // remove every second beat
+        scaleHalve();
+        break;
+    case TWOTHIRDS:
+        // introduce a new beat into every gap
+        scaleDouble();
+        // remove every second and third beat
+        scaleThird();
+        break;
+    case THREEFOURTHS:
+        // introduce two beats into every gap
+        scaleTriple();
+        // remove every second third and forth beat
+        scaleFourth();
+        break;
+    case FOURTHIRDS:
+        // introduce three beats into every gap
+        scaleQuadruple();
+        // remove every second third and forth beat
+        scaleThird();
+        break;
+    case THREEHALVES:
+        // introduce two beats into every gap
+        scaleTriple();
+        // remove every second beat
+        scaleHalve();
+        break;
+    default:
+        DEBUG_ASSERT(!"scale value invalid");
+        return;
     }
     onBeatlistChanged();
     locker.unlock();
@@ -684,17 +684,19 @@ void BeatMap::setBpm(double dBpm) {
      * fail to guess the correct bpm of a track by usually reporting it as the double or one
      * half of the correct one.
      * We can interpret it in two ways:
-     * On one hand, a beattracking algorithm which totally avoid the octave error does not yet
-     * exists. On the other hand, even if the algorithm guesses the correct bpm, 30% of the users
-     * will perceive a different bpm and likely change it. In this case, we assume that calculated
-     * beat markers are correctly placed. All that we have to do is to delete or add some beat
-     * markers, while leaving others so that the number of the beat markers per minute matches the
-     * new bpm. We are jealous of our well-guessed beats since they belong to a time-expensive
-     * analysis. When requested we simply turn them off instead of deleting them, so that they can
-     * be recollected. If the new provided bpm is not a power-of-two fraction, we assume that the
-     * algorithm failed at all to guess the bpm. I have no idea on how to deal with this. If we
-     * assume that bpm does not change along the track, i.e. if we use fixed tempo approximation
-     * (see analyzerbeat.*), this should coincide with the method in beatgrid.cpp.
+     * On one hand, a beattracking algorithm which totally avoid the octave error does not yet exists.
+     * On the other hand, even if the algorithm guesses the correct bpm,
+     * 30% of the users will perceive a different bpm and likely change it.
+     * In this case, we assume that calculated beat markers are correctly placed. All
+     * that we have to do is to delete or add some beat markers, while leaving others
+     * so that the number of the beat markers per minute matches the new bpm.
+     * We are jealous of our well-guessed beats since they belong to a time-expensive analysis.
+     * When requested we simply turn them off instead of deleting them, so that they can be recollected.
+     * If the new provided bpm is not a power-of-two fraction, we assume that the algorithm failed
+     * at all to guess the bpm. I have no idea on how to deal with this.
+     * If we assume that bpm does not change along the track, i.e. if we use
+     * fixed tempo approximation (see analyzerbeat.*), this should coincide with the
+     * method in beatgrid.cpp.
      *
      * - vittorio.
      */

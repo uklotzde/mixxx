@@ -23,7 +23,7 @@
 
 static bool sDebug = false;
 
-const double kCorrectBeatLocalBpmEpsilon = 0.05; // 0.2;
+const double kCorrectBeatLocalBpmEpsilon = 0.05; //0.2;
 const int kHistogramDecimalPlaces = 2;
 const double kHistogramDecimalScale = pow(10.0, kHistogramDecimalPlaces);
 const double kBpmFilterTolerance = 1.0;
@@ -86,7 +86,7 @@ QList<double> BeatUtils::computeWindowedBpmsAndFrequencyHistogram(
         const int sampleRate, QMap<double, int>* frequencyHistogram) {
     QList<double> averageBpmList;
     for (int i = windowSize; i < beats.size(); i += windowStep) {
-        // get start and end sample of the beats
+        //get start and end sample of the beats
         double start_sample = beats.at(i - windowSize);
         double end_sample = beats.at(i);
 
@@ -204,7 +204,7 @@ double BeatUtils::calculateBpm(
      * non-electronic music isn't too bad.
      */
 
-    // qDebug() << "BPM range between " << min_bpm << " and " << max_bpm;
+    //qDebug() << "BPM range between " << min_bpm << " and " << max_bpm;
 
     // a subset of the 'frequency_table', where the bpm values are +-1 away from
     // the median average BPM.
@@ -252,7 +252,7 @@ double BeatUtils::calculateBpm(
         // round BPM to have two decimal places
         local_bpm = floor(local_bpm * kHistogramDecimalScale + 0.5) / kHistogramDecimalScale;
 
-        // qDebug() << "Local BPM beat " << i << ": " << local_bpm;
+        //qDebug() << "Local BPM beat " << i << ": " << local_bpm;
         if (!foundFirstCorrectBeat && filtered_bpm_frequency_table.contains(local_bpm) &&
             fabs(local_bpm - filterWeightedAverageBpm) < BPM_ERROR) {
             firstCorrectBeatSample = beat_start;
@@ -360,12 +360,12 @@ double BeatUtils::findFirstCorrectBeat(
         // Average BPM within this sample range.
         double avg_bpm = 60.0 * N / time;
 
-        // qDebug() << "Local BPM between beat " << (i-N) << " and " << i << " is " << avg_bpm;
+        //qDebug() << "Local BPM between beat " << (i-N) << " and " << i << " is " << avg_bpm;
 
         // If the local BPM is within kCorrectBeatLocalBpmEpsilon of the global
         // BPM then use this window as the first beat.
         if (fabs(global_bpm - avg_bpm) <= kCorrectBeatLocalBpmEpsilon) {
-            // qDebug() << "Using beat " << (i-N) << " as first beat";
+            //qDebug() << "Using beat " << (i-N) << " as first beat";
             return start_sample;
         }
     }

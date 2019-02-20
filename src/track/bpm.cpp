@@ -38,8 +38,7 @@ double Bpm::valueFromString(const QString& str, bool* pValid) {
 
 QString Bpm::valueToString(double value) {
     if (isValidValue(value)) {
-        // TODO: Shouldn't this be formatted in some way, instead of letting it output in scientific
-        // notation?
+        //TODO: Shouldn't this be formatted in some way, instead of letting it output in scientific notation?
         return QString::number(value);
     } else {
         return QString();
@@ -58,4 +57,4 @@ double Bpm::normalizeValue(double value) {
     }
 }
 
-} // namespace mixxx
+} //namespace mixxx
