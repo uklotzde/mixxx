@@ -32,7 +32,8 @@ bool BeatLessThan(const Beat& beat1, const Beat& beat2) {
 class BeatMapIterator : public BeatIterator {
   public:
     BeatMapIterator(BeatList::const_iterator start, BeatList::const_iterator end)
-            : m_currentBeat(start), m_endBeat(end) {
+            : m_currentBeat(start),
+              m_endBeat(end) {
         // Advance to the first enabled beat.
         while (m_currentBeat != m_endBeat && !m_currentBeat->enabled()) {
             ++m_currentBeat;
@@ -113,7 +114,8 @@ BeatsPointer BeatMap::clone() const {
 bool BeatMap::readByteArray(const QByteArray& byteArray) {
     mixxx::track::io::BeatMap map;
     if (!map.ParseFromArray(byteArray.constData(), byteArray.size())) {
-        qDebug() << "ERROR: Could not parse BeatMap from QByteArray of size" << byteArray.size();
+        qDebug() << "ERROR: Could not parse BeatMap from QByteArray of size"
+                 << byteArray.size();
         return false;
     }
     for (int i = 0; i < map.beat_size(); ++i) {
@@ -276,8 +278,7 @@ double BeatMap::findNthBeat(double dSamples, int n) const {
     return -1;
 }
 
-bool BeatMap::findPrevNextBeats(
-        double dSamples, double* dpPrevBeatSamples, double* dpNextBeatSamples) const {
+bool BeatMap::findPrevNextBeats(double dSamples, double* dpPrevBeatSamples, double* dpNextBeatSamples) const {
     QMutexLocker locker(&m_mutex);
 
     if (!isValid()) {
@@ -450,7 +451,8 @@ void BeatMap::addBeat(double dBeatSample) {
     QMutexLocker locker(&m_mutex);
     Beat beat;
     beat.set_frame_position(samplesToFrames(dBeatSample));
-    BeatList::iterator it = qLowerBound(m_beats.begin(), m_beats.end(), beat, BeatLessThan);
+    BeatList::iterator it = qLowerBound(
+            m_beats.begin(), m_beats.end(), beat, BeatLessThan);
 
     // Don't insert a duplicate beat. TODO(XXX) determine what epsilon to
     // consider a beat identical to another.
@@ -467,7 +469,8 @@ void BeatMap::removeBeat(double dBeatSample) {
     QMutexLocker locker(&m_mutex);
     Beat beat;
     beat.set_frame_position(samplesToFrames(dBeatSample));
-    BeatList::iterator it = qLowerBound(m_beats.begin(), m_beats.end(), beat, BeatLessThan);
+    BeatList::iterator it = qLowerBound(
+            m_beats.begin(), m_beats.end(), beat, BeatLessThan);
 
     // In case there are duplicates, remove every instance of dBeatSample
     // TODO(XXX) add invariant checks against this
@@ -486,7 +489,8 @@ void BeatMap::moveBeat(double dBeatSample, double dNewBeatSample) {
     beat.set_frame_position(samplesToFrames(dBeatSample));
     newBeat.set_frame_position(samplesToFrames(dNewBeatSample));
 
-    BeatList::iterator it = qLowerBound(m_beats.begin(), m_beats.end(), beat, BeatLessThan);
+    BeatList::iterator it = qLowerBound(
+            m_beats.begin(), m_beats.end(), beat, BeatLessThan);
 
     // In case there are duplicates, remove every instance of dBeatSample
     // TODO(XXX) add invariant checks against this
@@ -517,7 +521,8 @@ void BeatMap::translate(double dNumSamples) {
     }
 
     double dNumFrames = samplesToFrames(dNumSamples);
-    for (BeatList::iterator it = m_beats.begin(); it != m_beats.end();) {
+    for (BeatList::iterator it = m_beats.begin();
+         it != m_beats.end();) {
         double newpos = it->frame_position() + dNumFrames;
         if (newpos >= 0) {
             it->set_frame_position(newpos);
