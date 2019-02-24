@@ -1,3 +1,10 @@
+/*
+ * beatmap.cpp
+ *
+ *  Created on: 08/dic/2011
+ *      Author: vittorio
+ */
+
 #include <QMutexLocker>
 #include <QtDebug>
 #include <QtGlobal>
@@ -25,7 +32,8 @@ bool BeatLessThan(const Beat& beat1, const Beat& beat2) {
 class BeatMapIterator : public BeatIterator {
   public:
     BeatMapIterator(BeatList::const_iterator start, BeatList::const_iterator end)
-        : m_currentBeat(start), m_endBeat(end) {
+            : m_currentBeat(start),
+              m_endBeat(end) {
         // Advance to the first enabled beat.
         while (m_currentBeat != m_endBeat && !m_currentBeat->enabled()) {
             ++m_currentBeat;
@@ -51,34 +59,34 @@ class BeatMapIterator : public BeatIterator {
 };
 
 BeatMap::BeatMap(const Track& track, SINT iSampleRate)
-    : m_mutex(QMutex::Recursive),
-      m_iSampleRate(iSampleRate > 0 ? iSampleRate : track.getSampleRate()),
-      m_dCachedBpm(0),
-      m_dLastFrame(0) {
+        : m_mutex(QMutex::Recursive),
+          m_iSampleRate(iSampleRate > 0 ? iSampleRate : track.getSampleRate()),
+          m_dCachedBpm(0),
+          m_dLastFrame(0) {
     // BeatMap should live in the same thread as the track it is associated
     // with.
     moveToThread(track.thread());
 }
 
 BeatMap::BeatMap(const Track& track, SINT iSampleRate, const QByteArray& byteArray)
-    : BeatMap(track, iSampleRate) {
+        : BeatMap(track, iSampleRate) {
     readByteArray(byteArray);
 }
 
 BeatMap::BeatMap(const Track& track, SINT iSampleRate, const QVector<double>& beats)
-    : BeatMap(track, iSampleRate) {
+        : BeatMap(track, iSampleRate) {
     if (beats.size() > 0) {
         createFromBeatVector(beats);
     }
 }
 
 BeatMap::BeatMap(const BeatMap& other)
-    : m_mutex(QMutex::Recursive),
-      m_subVersion(other.m_subVersion),
-      m_iSampleRate(other.m_iSampleRate),
-      m_dCachedBpm(other.m_dCachedBpm),
-      m_dLastFrame(other.m_dLastFrame),
-      m_beats(other.m_beats) {
+        : m_mutex(QMutex::Recursive),
+          m_subVersion(other.m_subVersion),
+          m_iSampleRate(other.m_iSampleRate),
+          m_dCachedBpm(other.m_dCachedBpm),
+          m_dLastFrame(other.m_dLastFrame),
+          m_beats(other.m_beats) {
     moveToThread(other.thread());
 }
 
@@ -106,7 +114,8 @@ BeatsPointer BeatMap::clone() const {
 bool BeatMap::readByteArray(const QByteArray& byteArray) {
     mixxx::track::io::BeatMap map;
     if (!map.ParseFromArray(byteArray.constData(), byteArray.size())) {
-        qDebug() << "ERROR: Could not parse BeatMap from QByteArray of size" << byteArray.size();
+        qDebug() << "ERROR: Could not parse BeatMap from QByteArray of size"
+                 << byteArray.size();
         return false;
     }
     for (int i = 0; i < map.beat_size(); ++i) {
@@ -269,8 +278,7 @@ double BeatMap::findNthBeat(double dSamples, int n) const {
     return -1;
 }
 
-bool BeatMap::findPrevNextBeats(
-        double dSamples, double* dpPrevBeatSamples, double* dpNextBeatSamples) const {
+bool BeatMap::findPrevNextBeats(double dSamples, double* dpPrevBeatSamples, double* dpNextBeatSamples) const {
     QMutexLocker locker(&m_mutex);
 
     if (!isValid()) {
@@ -357,8 +365,8 @@ bool BeatMap::findPrevNextBeats(
 
 std::unique_ptr<BeatIterator> BeatMap::findBeats(double startSample, double stopSample) const {
     QMutexLocker locker(&m_mutex);
-    // startSample and stopSample are sample offsets, converting them to
-    // frames
+    //startSample and stopSample are sample offsets, converting them to
+    //frames
     if (!isValid() || startSample > stopSample) {
         return std::unique_ptr<BeatIterator>();
     }
@@ -443,7 +451,8 @@ void BeatMap::addBeat(double dBeatSample) {
     QMutexLocker locker(&m_mutex);
     Beat beat;
     beat.set_frame_position(samplesToFrames(dBeatSample));
-    BeatList::iterator it = qLowerBound(m_beats.begin(), m_beats.end(), beat, BeatLessThan);
+    BeatList::iterator it = qLowerBound(
+            m_beats.begin(), m_beats.end(), beat, BeatLessThan);
 
     // Don't insert a duplicate beat. TODO(XXX) determine what epsilon to
     // consider a beat identical to another.
@@ -460,7 +469,8 @@ void BeatMap::removeBeat(double dBeatSample) {
     QMutexLocker locker(&m_mutex);
     Beat beat;
     beat.set_frame_position(samplesToFrames(dBeatSample));
-    BeatList::iterator it = qLowerBound(m_beats.begin(), m_beats.end(), beat, BeatLessThan);
+    BeatList::iterator it = qLowerBound(
+            m_beats.begin(), m_beats.end(), beat, BeatLessThan);
 
     // In case there are duplicates, remove every instance of dBeatSample
     // TODO(XXX) add invariant checks against this
@@ -479,7 +489,8 @@ void BeatMap::moveBeat(double dBeatSample, double dNewBeatSample) {
     beat.set_frame_position(samplesToFrames(dBeatSample));
     newBeat.set_frame_position(samplesToFrames(dNewBeatSample));
 
-    BeatList::iterator it = qLowerBound(m_beats.begin(), m_beats.end(), beat, BeatLessThan);
+    BeatList::iterator it = qLowerBound(
+            m_beats.begin(), m_beats.end(), beat, BeatLessThan);
 
     // In case there are duplicates, remove every instance of dBeatSample
     // TODO(XXX) add invariant checks against this
@@ -510,7 +521,8 @@ void BeatMap::translate(double dNumSamples) {
     }
 
     double dNumFrames = samplesToFrames(dNumSamples);
-    for (BeatList::iterator it = m_beats.begin(); it != m_beats.end();) {
+    for (BeatList::iterator it = m_beats.begin();
+         it != m_beats.end();) {
         double newpos = it->frame_position() + dNumFrames;
         if (newpos >= 0) {
             it->set_frame_position(newpos);
@@ -531,41 +543,41 @@ void BeatMap::scale(enum BPMScale scale) {
     }
 
     switch (scale) {
-        case DOUBLE:
-            // introduce a new beat into every gap
-            scaleDouble();
-            break;
-        case HALVE:
-            // remove every second beat
-            scaleHalve();
-            break;
-        case TWOTHIRDS:
-            // introduce a new beat into every gap
-            scaleDouble();
-            // remove every second and third beat
-            scaleThird();
-            break;
-        case THREEFOURTHS:
-            // introduce two beats into every gap
-            scaleTriple();
-            // remove every second third and forth beat
-            scaleFourth();
-            break;
-        case FOURTHIRDS:
-            // introduce three beats into every gap
-            scaleQuadruple();
-            // remove every second third and forth beat
-            scaleThird();
-            break;
-        case THREEHALVES:
-            // introduce two beats into every gap
-            scaleTriple();
-            // remove every second beat
-            scaleHalve();
-            break;
-        default:
-            DEBUG_ASSERT(!"scale value invalid");
-            return;
+    case DOUBLE:
+        // introduce a new beat into every gap
+        scaleDouble();
+        break;
+    case HALVE:
+        // remove every second beat
+        scaleHalve();
+        break;
+    case TWOTHIRDS:
+        // introduce a new beat into every gap
+        scaleDouble();
+        // remove every second and third beat
+        scaleThird();
+        break;
+    case THREEFOURTHS:
+        // introduce two beats into every gap
+        scaleTriple();
+        // remove every second third and forth beat
+        scaleFourth();
+        break;
+    case FOURTHIRDS:
+        // introduce three beats into every gap
+        scaleQuadruple();
+        // remove every second third and forth beat
+        scaleThird();
+        break;
+    case THREEHALVES:
+        // introduce two beats into every gap
+        scaleTriple();
+        // remove every second beat
+        scaleHalve();
+        break;
+    default:
+        DEBUG_ASSERT(!"scale value invalid");
+        return;
     }
     onBeatlistChanged();
     locker.unlock();
@@ -677,17 +689,19 @@ void BeatMap::setBpm(double dBpm) {
      * fail to guess the correct bpm of a track by usually reporting it as the double or one
      * half of the correct one.
      * We can interpret it in two ways:
-     * On one hand, a beattracking algorithm which totally avoid the octave error does not yet
-     * exists. On the other hand, even if the algorithm guesses the correct bpm, 30% of the users
-     * will perceive a different bpm and likely change it. In this case, we assume that calculated
-     * beat markers are correctly placed. All that we have to do is to delete or add some beat
-     * markers, while leaving others so that the number of the beat markers per minute matches the
-     * new bpm. We are jealous of our well-guessed beats since they belong to a time-expensive
-     * analysis. When requested we simply turn them off instead of deleting them, so that they can
-     * be recollected. If the new provided bpm is not a power-of-two fraction, we assume that the
-     * algorithm failed at all to guess the bpm. I have no idea on how to deal with this. If we
-     * assume that bpm does not change along the track, i.e. if we use fixed tempo approximation
-     * (see analyzerbeat.*), this should coincide with the method in beatgrid.cpp.
+     * On one hand, a beattracking algorithm which totally avoid the octave error does not yet exists.
+     * On the other hand, even if the algorithm guesses the correct bpm,
+     * 30% of the users will perceive a different bpm and likely change it.
+     * In this case, we assume that calculated beat markers are correctly placed. All
+     * that we have to do is to delete or add some beat markers, while leaving others
+     * so that the number of the beat markers per minute matches the new bpm.
+     * We are jealous of our well-guessed beats since they belong to a time-expensive analysis.
+     * When requested we simply turn them off instead of deleting them, so that they can be recollected.
+     * If the new provided bpm is not a power-of-two fraction, we assume that the algorithm failed
+     * at all to guess the bpm. I have no idea on how to deal with this.
+     * If we assume that bpm does not change along the track, i.e. if we use
+     * fixed tempo approximation (see analyzerbeat.*), this should coincide with the
+     * method in beatgrid.cpp.
      *
      * - vittorio.
      */

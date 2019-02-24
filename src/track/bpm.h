@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MIXXX_BPM_H
+#define MIXXX_BPM_H
 
 #include <QtDebug>
 
@@ -13,9 +14,11 @@ class Bpm final {
     static constexpr double kValueMin = 0.0;   // lower bound (exclusive)
     static constexpr double kValueMax = 300.0; // higher bound (inclusive)
 
-    Bpm() : Bpm(kValueUndefined) {
+    Bpm()
+            : Bpm(kValueUndefined) {
     }
-    explicit Bpm(double value) : m_value(value) {
+    explicit Bpm(double value)
+            : m_value(value) {
     }
 
     static double normalizeValue(double value);
@@ -69,3 +72,5 @@ inline QDebug operator<<(QDebug dbg, const Bpm& arg) {
 
 Q_DECLARE_TYPEINFO(mixxx::Bpm, Q_MOVABLE_TYPE);
 Q_DECLARE_METATYPE(mixxx::Bpm)
+
+#endif // MIXXX_BPM_H

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BEATS_H
+#define BEATS_H
 
 #include <QByteArray>
 #include <QList>
@@ -92,8 +93,7 @@ class Beats : public QObject {
     // value is the next beat position.  Non- -1 values are guaranteed to be
     // even.  Returns false if *at least one* sample is -1.  (Can return false
     // with one beat successfully filled)
-    virtual bool findPrevNextBeats(
-            double dSamples, double* dpPrevBeatSamples, double* dpNextBeatSamples) const = 0;
+    virtual bool findPrevNextBeats(double dSamples, double* dpPrevBeatSamples, double* dpNextBeatSamples) const = 0;
 
     // Starting from sample dSamples, return the sample of the closest beat in
     // the track, or -1 if none exists.  Non- -1 values are guaranteed to be
@@ -117,8 +117,7 @@ class Beats : public QObject {
     // startPosition and endPosition. BeatIterator must be iterated while
     // holding a strong references to the Beats object to ensure that the Beats
     // object is not deleted. Caller takes ownership of the returned BeatIterator;
-    virtual std::unique_ptr<BeatIterator> findBeats(
-            double startSample, double stopSample) const = 0;
+    virtual std::unique_ptr<BeatIterator> findBeats(double startSample, double stopSample) const = 0;
 
     // Return whether or not a sample lies between startPosition and endPosition
     virtual bool hasBeatInRange(double startSample, double stopSample) const = 0;
@@ -168,3 +167,5 @@ class Beats : public QObject {
   signals:
     void updated();
 };
+
+#endif /* BEATS_H */
