@@ -178,18 +178,19 @@ AoideTrack Translator::exportTrack(const Track& track) const {
                     kLogger.warning() << "Multiple load cues detected - skipping";
                     continue;
                 }
-                // Use the position of the main cue point from the track for
-                // the singular load cue. The first load cue only provides
-                // additional metadata like a label and a color.
-                position = trackRecord.getCuePoint();
+                position = cuePoint->getPosition();
                 length = 0;
-                if (position != cuePoint->getPosition()) {
+                // Cue points are expected to be rounded to sample frame boundaries.
+                // Currently Mixxx does not correctly synchronize the persistent
+                // sample position of the cue point object with the fractional
+                // sample position stored in the track object.
+                if (std::fabs(trackRecord.getCuePoint() - position) >= track.getChannels()) {
                     QString msg;
                     QTextStream ts(&msg);
                     ts << qSetRealNumberPrecision(std::numeric_limits<double>::max_digits10)
-                            << "Load cue differs from track cue position"
+                            << "Load cue differs from the track's main cue position"
                             << ": expected = " << position
-                            << ", actual = " << cuePoint->getPosition();
+                            << ", actual = " << trackRecord.getCuePoint();
                     kLogger.warning() << msg.toLocal8Bit().data();
                 }
                 mark = "load-cue";
