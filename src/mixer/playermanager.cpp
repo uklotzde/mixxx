@@ -27,8 +27,10 @@ namespace {
 
 const mixxx::Logger kLogger("PlayerManager");
 
-// Utilize half of the available cores for adhoc analysis of tracks
-const int kNumberOfAnalyzerThreads = math_max(1, QThread::idealThreadCount() / 2);
+// Utilize half of the available cores for adhoc analysis of tracks,
+// but never more than 4 threads to keep the UI thread and the whole
+// system responsive at any time.
+const int kNumberOfAnalyzerThreads = math_min(4, math_max(1, QThread::idealThreadCount() / 2));
 
 } // anonymous namespace
 
@@ -125,6 +127,10 @@ void PlayerManager::bindToLibrary(Library* pLibrary) {
             &Library::slotLoadLocationToPlayer);
 
     DEBUG_ASSERT(!m_pTrackAnalysisScheduler);
+    kLogger.info()
+            << "Using"
+            << kNumberOfAnalyzerThreads
+            << "analyzer threads";
     m_pTrackAnalysisScheduler = TrackAnalysisScheduler::createInstance(
             pLibrary,
             kNumberOfAnalyzerThreads,
