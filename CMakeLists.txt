@@ -1174,6 +1174,7 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/util/desktophelper.cpp
   src/util/dnd.cpp
   src/util/duration.cpp
+  src/util/encodedurl.cpp
   src/util/experiment.cpp
   src/util/file.cpp
   src/util/fileaccess.cpp
