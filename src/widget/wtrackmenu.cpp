@@ -275,6 +275,11 @@ void WTrackMenu::createActions() {
                         slotUpdateExternalTrackCollection(pExternalTrackCollection);
                     });
         }
+
+        m_pAppendCommentTagAct = new QAction(tr("Append comment tag"), this);
+        connect(m_pAppendCommentTagAct, &QAction::triggered, this, &WTrackMenu::slotAppendCommentTag);
+        m_pRemoveCommentTagAct = new QAction(tr("Remove comment tag"), this);
+        connect(m_pRemoveCommentTagAct, &QAction::triggered, this, &WTrackMenu::slotRemoveCommentTag);
     }
 
     if (featureIsEnabled(Feature::Reset)) {
@@ -470,6 +475,9 @@ void WTrackMenu::setupActions() {
                         }
                     });
         }
+
+        m_pMetadataMenu->addAction(m_pAppendCommentTagAct);
+        m_pMetadataMenu->addAction(m_pRemoveCommentTagAct);
 
         m_pMetadataMenu->addMenu(m_pCoverMenu);
         addMenu(m_pMetadataMenu);
@@ -1830,4 +1838,85 @@ bool WTrackMenu::featureIsEnabled(Feature flag) const {
         DEBUG_ASSERT(!"unreachable");
         return false;
     }
+}
+
+namespace {
+
+class EditCommentTagsTrackPointerOperation : public mixxx::TrackPointerOperation {
+  public:
+    EditCommentTagsTrackPointerOperation(
+            const QString&& tagSeparator,
+            const QList<QPair<QString, QString>>&& editTags)
+            : m_tagSeparator(std::move(tagSeparator)),
+              m_editTags(std::move(editTags)) {
+        DEBUG_ASSERT(!m_tagSeparator.isEmpty());
+    }
+
+  private:
+    void doApply(
+            const TrackPointer& pTrack) const override {
+        auto comment = pTrack->getComment();
+        auto tags = comment.split(m_tagSeparator);
+        bool modified = false;
+        for (const auto& tagPair : m_editTags) {
+            const auto& oldTag = tagPair.first;
+            const auto& newTag = tagPair.second;
+            VERIFY_OR_DEBUG_ASSERT(!(oldTag.isEmpty() && newTag.isEmpty())) {
+                continue;
+            }
+            if (!oldTag.isEmpty()) {
+                if (tags.removeAll(oldTag) < 1) {
+                    // Not found
+                    continue;
+                }
+                modified = true;
+            }
+            if (!newTag.isEmpty()) {
+                if (tags.contains(newTag)) {
+                    // Already exists
+                    continue;
+                }
+                tags.append(newTag);
+                modified = true;
+            }
+        }
+        if (modified) {
+            pTrack->setComment(tags.join(m_tagSeparator));
+        }
+    }
+
+    const QString m_tagSeparator;
+    const QList<QPair<QString, QString>> m_editTags;
+};
+
+} // anonymous namespace
+
+void WTrackMenu::slotAppendCommentTag() {
+    const auto progressLabelText =
+            tr("Appending comment tag to %n track(s)", "", getTrackCount());
+    const auto trackOperator =
+            EditCommentTagsTrackPointerOperation(
+                    QStringLiteral(" "),
+                    {
+                            {QString(), QStringLiteral("Selection:DJ")},
+                            {QStringLiteral("PartyClassic"), QStringLiteral("Party")},
+                            {QStringLiteral("WeddingClassic"), QStringLiteral("Wedding")},
+                    });
+    applyTrackPointerOperation(
+            progressLabelText,
+            &trackOperator);
+}
+
+void WTrackMenu::slotRemoveCommentTag() {
+    const auto progressLabelText =
+            tr("Removing comment tag from %n track(s)", "", getTrackCount());
+    const auto trackOperator =
+            EditCommentTagsTrackPointerOperation(
+                    QStringLiteral(" "),
+                    {
+                            {QStringLiteral("Selection:DJ"), QString()},
+                    });
+    applyTrackPointerOperation(
+            progressLabelText,
+            &trackOperator);
 }
