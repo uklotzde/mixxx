@@ -20,7 +20,7 @@ namespace {
 Logger kLogger("MetadataSourceTagLib");
 
 // TODO(uklotzde): Add a configurable option in the user settings
-const bool kExportTrackMetadataIntoTemporaryFile = true;
+const bool kExportTrackMetadataIntoTemporaryFile = false;
 
 // Appended to the original file name of the temporary file used for writing
 const QString kSafelyWritableTempFileSuffix = QStringLiteral("_temp");
