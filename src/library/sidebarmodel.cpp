@@ -239,7 +239,11 @@ QVariant SidebarModel::data(const QModelIndex& index, int role) const {
                 if (tree_item->getData().toString() == QUICK_LINK_NODE) {
                     return tree_item->getLabel();
                 } else {
-                    return tree_item->getData();
+                    if (tree_item->getToolTip().isEmpty()) {
+                        return tree_item->getData();
+                    } else {
+                        return tree_item->getToolTip();
+                    }
                 }
             } else if (role == TreeItemModel::kDataRole) {
                 // We use Qt::UserRole to ask for the datapath.
