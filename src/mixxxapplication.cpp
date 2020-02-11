@@ -2,6 +2,7 @@
 
 #include <QThreadPool>
 #include <QTouchEvent>
+#include <QUrl>
 #include <QtDebug>
 
 #include "audio/types.h"
@@ -100,6 +101,10 @@ void MixxxApplication::registerMetaTypes() {
     qRegisterMetaType<mixxx::FacetedTagConfig>("mixxx::FacetedTagConfig");
     qRegisterMetaType<mixxx::TagMappingConfig>("mixxx::TagMappingConfig");
     qRegisterMetaType<mixxx::TaggingConfig>("mixxx::TaggingConfig");
+
+    // QUrl
+    qRegisterMetaType<QList<QUrl>>();
+    qRegisterMetaType<QMap<QUrl, QString>>();
 
     // Various custom data types
     qRegisterMetaType<mixxx::ReplayGain>("mixxx::ReplayGain");
