@@ -16,6 +16,7 @@
 #include "library/trackcollectionmanager.h"
 #include "library/trackprocessing.h"
 #include "tagging/customtagsdb.h"
+#include "tagging/customtagsfromtrackcommentextractor.h"
 #include "tagging/taggingcontext.h"
 #include "track/track.h"
 #include "util/logger.h"
@@ -392,6 +393,47 @@ void TrackCustomTagsMenu::rebuild(
                             }
                             unsetCursor();
                         }));
+    }
+    {
+        const parented_ptr<QAction> pAction(
+                addAction(
+                        tr("Extract tags from comment..."),
+                        this,
+                        [this] {
+                            CustomTagsFromTrackCommentExtractor trackOperator(
+                                    m_pTrackCollectionManager);
+                            applyOperator(tr("Extracting custom tags from %n "
+                                             "track(s)",
+                                                  "",
+                                                  m_trackIds.size()),
+                                    &trackOperator);
+                        }));
+        pAction->setEnabled(!m_trackIds.isEmpty());
+    }
+    {
+        const parented_ptr<QAction> pAction(
+                addAction(
+                        tr("Move track file into Attic collection..."),
+                        this,
+                        [this] {
+                            const QString oldPrefix =
+                                    QStringLiteral("/home/uk/Music/Collection/");
+                            const QString newPrefix =
+                                    QStringLiteral("/home/uk/Music/Collections/Attic/");
+                            TrackFileMover trackOperator(
+                                    m_pTrackCollectionManager,
+                                    FileLocationReplacement{
+                                            oldPrefix,
+                                            newPrefix,
+                                    });
+                            applyOperator(
+                                    tr("Moving %n track(s) from %1 to %2", "", m_trackIds.size())
+                                            .arg(
+                                                    oldPrefix,
+                                                    newPrefix),
+                                    &trackOperator);
+                        }));
+        pAction->setEnabled(!m_trackIds.isEmpty());
     }
 }
 

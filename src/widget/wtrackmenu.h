@@ -137,9 +137,6 @@ class WTrackMenu : public QMenu {
     void slotUnhide();
     void slotPurge();
 
-    void slotAppendCommentTag();
-    void slotRemoveCommentTag();
-
   private:
     // This getter verifies that m_pTrackModel is set when
     // invoked.
@@ -224,6 +221,7 @@ class WTrackMenu : public QMenu {
     // Save Track Metadata Action:
     QAction* m_pExportMetadataAct{};
 
+    QAction* m_pUpdateGenreTextAct{};
     QAction* m_pAppendCommentTagAct{};
     QAction* m_pRemoveCommentTagAct{};
 

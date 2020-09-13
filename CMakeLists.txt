@@ -811,6 +811,7 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/sources/soundsourcesndfile.cpp
   src/tagging/customtags.cpp
   src/tagging/customtagsdb.cpp
+  src/tagging/customtagsfromtrackcommentextractor.cpp
   src/tagging/taggingconfig.cpp
   src/tagging/taggingcontext.cpp
   src/tagging/taggingui.cpp
