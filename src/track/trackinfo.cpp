@@ -1,5 +1,10 @@
 #include "track/trackinfo.h"
 
+#if defined(__EXTRA_METADATA__)
+#include <QRegularExpression>
+
+#include "util/logger.h"
+#endif // __EXTRA_METADATA__
 
 namespace mixxx {
 
@@ -41,6 +46,51 @@ bool TrackInfo::parseArtistTitleFromFileName(
     }
     return modified;
 }
+
+#if defined(__EXTRA_METADATA__)
+namespace {
+
+const Logger kLogger("TrackInfo");
+
+const QRegularExpression kDiscTrackNumbers(
+        "^\\s*((?<discNumber>\\d+)\\s*-\\s*)?(?<trackNumber>\\d+)\\s+.*$");
+
+} // anonymous namespace
+
+bool TrackInfo::restoreDiscTrackNumbersFromFileName(const QString& fileName) {
+    QRegularExpressionMatch match = kDiscTrackNumbers.match(fileName);
+    bool modified = false;
+    if (match.hasMatch()) {
+        if (getDiscNumber().isEmpty() ||
+                getDiscNumber().toInt() <= 0) {
+            QString discNumber = match.captured("discNumber");
+            if (!discNumber.isEmpty()) {
+                kLogger.info()
+                        << "Restoring disc number"
+                        << discNumber
+                        << "on"
+                        << fileName;
+                setDiscNumber(discNumber);
+                modified = true;
+            }
+        }
+        if (getTrackNumber().isEmpty() ||
+                getTrackNumber().toInt() <= 0) {
+            QString trackNumber = match.captured("trackNumber");
+            if (!trackNumber.isEmpty()) {
+                kLogger.info()
+                        << "Restoring track number"
+                        << trackNumber
+                        << "on"
+                        << fileName;
+                setTrackNumber(trackNumber);
+                modified = true;
+            }
+        }
+    }
+    return modified;
+}
+#endif // __EXTRA_METADATA__
 
 bool TrackInfo::compareEq(
         const TrackInfo& trackInfo,
