@@ -598,6 +598,12 @@ bool SoundSourceProxy::updateTrackFromSource(
         trackMetadata = m_pTrack->getMetadata(&headerParsed);
     }
 
+#if defined(__EXTRA_METADATA__)
+    // Restore lost disc or track numbers
+    trackMetadata.refTrackInfo().restoreDiscTrackNumbersFromFileName(
+            m_pTrack->getFileInfo().fileName());
+#endif // __EXTRA_METADATA__
+
     // Partial import
     if (mergeExtraMetadataFromSource) {
         // No reimport of embedded cover image desired in this case

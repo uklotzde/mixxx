@@ -73,6 +73,10 @@ class TrackInfo final {
             QString fileName,
             bool splitArtistTitle);
 
+    // Returns true if modified
+    bool restoreDiscTrackNumbersFromFileName(
+            const QString& fileName);
+
     // Adjusts floating-point properties to match their string representation
     // in file tags to account for rounding errors.
     void normalizeBeforeExport() {
