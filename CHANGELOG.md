@@ -7,6 +7,11 @@
 * Add Random Track Control to AutoDJ [#3076](https://github.com/mixxxdj/mixxx/pull/3076)
 * Add support for saving loops as hotcues [#2194](https://github.com/mixxxdj/mixxx/pull/2194) [lp:1367159](https://bugs.launchpad.net/mixxx/+bug/1367159)
 
+### Audio Codecs ###
+* Linux: Add FFmpeg audio decoder (Ubuntu: requires 20.04/Focal)
+  - Support for decoding ALAC files [#1356](https://github.com/mixxxdj/mixxx/pull/1356)
+  - Support for decoding M4A/AAC files, using legacy FAAD2 as a fallback [#3050](https://github.com/mixxxdj/mixxx/pull/3050)
+
 ## [2.3.0](https://launchpad.net/mixxx/+milestone/2.3.0) (Unreleased)
 ### Hotcues ###
 * Add hotcue colors and custom labels by right clicking hotcue buttons or right clicking hotcues on overview waveforms [#2016](https://github.com/mixxxdj/mixxx/pull/2016) [#2520](https://github.com/mixxxdj/mixxx/pull/2520) [#2238](https://github.com/mixxxdj/mixxx/pull/2238) [#2560](https://github.com/mixxxdj/mixxx/pull/2560) [#2557](https://github.com/mixxxdj/mixxx/pull/2557) [#2362](https://github.com/mixxxdj/mixxx/pull/2362)
