@@ -245,7 +245,50 @@ mixxx::TrackMetadata Track::getMetadata(
         *pMetadataSynchronized = m_record.getMetadataSynchronized();
     }
     return m_record.getMetadata();
+}
+
+bool Track::replaceRecord(
+        mixxx::TrackRecord&& newRecord,
+        mixxx::BeatsPointer pOptionalBeats) {
+    const auto newKey = newRecord.getGlobalKey();
+    const auto newReplayGain = newRecord.getMetadata().getTrackInfo().getReplayGain();
+    QMutexLocker locked(&m_qMutex);
+    const bool recordUnchanged = m_record == newRecord;
+    if (recordUnchanged && !pOptionalBeats) {
+        return false;
     }
+    const auto oldKey = m_record.getGlobalKey();
+    const auto oldReplayGain = m_record.getMetadata().getTrackInfo().getReplayGain();
+    bool bpmUpdatedFlag;
+    if (pOptionalBeats) {
+        bpmUpdatedFlag = trySetBeatsWhileLocked(std::move(pOptionalBeats));
+        if (recordUnchanged && !bpmUpdatedFlag) {
+            return false;
+        }
+    } else {
+        // Setting the bpm manually may in turn update the beat grid
+        bpmUpdatedFlag = trySetBpmWhileLocked(
+                newRecord.getMetadata().getTrackInfo().getBpm().getValue());
+    }
+    // Preserve the new (or existing) bpm that might have been updated already.
+    // Otherwise the bpm in the metadata could become inconsistent with the
+    // beat grid when replacing the entire metadata with the new record that
+    // includes a nominal bpm value!
+    const auto newBpm = m_record.getMetadata().getTrackInfo().getBpm();
+    newRecord.refMetadata().refTrackInfo().setBpm(newBpm);
+    m_record = std::move(newRecord);
+    markDirtyAndUnlock(&locked);
+    if (bpmUpdatedFlag) {
+        emit bpmUpdated(newBpm.getValue());
+        emit beatsUpdated();
+    }
+    if (oldKey != newKey) {
+        emitKeysUpdated(newKey);
+    }
+    if (oldReplayGain != newReplayGain) {
+        emit replayGainUpdated(newReplayGain);
+    }
+    return true;
 }
 
 mixxx::ReplayGain Track::getReplayGain() const {
