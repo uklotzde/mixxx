@@ -30,7 +30,7 @@ class TrackUpdateTest : public LibraryTest {
         auto pTrack = newTestTrack();
         SoundSourceProxy(pTrack).updateTrackFromSource(
                 trackCollections()->taggingConfig());
-        EXPECT_TRUE(pTrack->isMetadataSynchronized());
+        EXPECT_TRUE(pTrack->isSourceSynchronized());
         EXPECT_TRUE(hasTrackMetadata(pTrack));
         EXPECT_TRUE(hasCoverArt(pTrack));
         pTrack->markClean();
@@ -66,7 +66,7 @@ TEST_F(TrackUpdateTest, parseModifiedCleanOnce) {
     const auto coverInfoAfter = pTrack->getCoverInfo();
 
     // Not updated
-    EXPECT_TRUE(pTrack->isMetadataSynchronized());
+    EXPECT_TRUE(pTrack->isSourceSynchronized());
     EXPECT_FALSE(pTrack->isDirty());
     EXPECT_EQ(trackMetadataBefore, trackMetadataAfter);
     EXPECT_EQ(coverInfoBefore, coverInfoAfter);
@@ -87,7 +87,7 @@ TEST_F(TrackUpdateTest, parseModifiedCleanAgainSkipCover) {
     const auto coverInfoAfter = pTrack->getCoverInfo();
 
     // Updated
-    EXPECT_TRUE(pTrack->isMetadataSynchronized());
+    EXPECT_TRUE(pTrack->isSourceSynchronized());
     EXPECT_TRUE(pTrack->isDirty());
     EXPECT_NE(trackMetadataBefore, trackMetadataAfter);
     EXPECT_EQ(coverInfoBefore, coverInfoAfter);
@@ -112,7 +112,7 @@ TEST_F(TrackUpdateTest, parseModifiedCleanAgainUpdateCover) {
     const auto coverInfoAfter = pTrack->getCoverInfo();
 
     // Updated
-    EXPECT_TRUE(pTrack->isMetadataSynchronized());
+    EXPECT_TRUE(pTrack->isSourceSynchronized());
     EXPECT_TRUE(pTrack->isDirty());
     EXPECT_NE(trackMetadataBefore, trackMetadataAfter);
     EXPECT_NE(coverInfoBefore, coverInfoAfter);
@@ -132,7 +132,7 @@ TEST_F(TrackUpdateTest, parseModifiedDirtyAgain) {
     const auto coverInfoAfter = pTrack->getCoverInfo();
 
     // Updated
-    EXPECT_TRUE(pTrack->isMetadataSynchronized());
+    EXPECT_TRUE(pTrack->isSourceSynchronized());
     EXPECT_TRUE(pTrack->isDirty());
     EXPECT_NE(trackMetadataBefore, trackMetadataAfter);
     EXPECT_EQ(coverInfoBefore, coverInfoAfter);

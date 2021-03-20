@@ -756,7 +756,7 @@ void DlgTrackInfo::slotImportMetadataFromFile() {
     const auto fileAccess = m_pLoadedTrack->getFileAccess();
     mixxx::TrackMetadata trackMetadata;
     QImage coverImage;
-    const auto [importResult, metadataSynchronized] =
+    const auto [importResult, sourceSynchronizedAt] =
             SoundSourceProxy::importTrackMetadataAndCoverImageConcurrently(
                     m_pLoadedTrack->getFileAccess(),
                     &trackMetadata,
@@ -766,7 +766,7 @@ void DlgTrackInfo::slotImportMetadataFromFile() {
         trackRecord.replaceMetadataFromSource(
                 m_pTrackCollectionManager->taggingConfig(),
                 std::move(trackMetadata),
-                metadataSynchronized);
+                sourceSynchronizedAt);
         trackRecord.setCoverInfo(CoverInfoGuesser().guessCoverInfo(
                 fileAccess.info(),
                 trackMetadata.getAlbumInfo().getTitle(),
