@@ -80,9 +80,32 @@ class SoundSourceProxy {
         return m_pProvider;
     }
 
+    /// Import both the metadata and/or the cover image from a file.
+    ///
+    /// Pass nullptr if the corresponding data is not needed.
+    ///
+    /// This function is thread-safe and can be invoked from any thread.
+    /// It ensure that the file will not be written by another thread
+    /// while reading it.
+    static std::pair<mixxx::MetadataSource::ImportResult, QDateTime>
+    importTrackMetadataAndCoverImageConcurrently(
+            mixxx::FileAccess trackFileAccess,
+            mixxx::TrackMetadata* pTrackMetadata,
+            QImage* pCoverImage = nullptr);
+
+    /// Import both the metadata and/or the cover image from a file.
+    ///
+    /// The captured track object is not modified, i.e. the data is read
+    /// from the file directly into the provided output parameters.
+    ///
+    /// Pass nullptr if the corresponding data is not needed.
+    std::pair<mixxx::MetadataSource::ImportResult, QDateTime> importTrackMetadataAndCoverImage(
+            mixxx::TrackMetadata* pTrackMetadata,
+            QImage* pCoverImage) const;
+
     /// Controls which (metadata/coverart) and how tags are (re-)imported from
     /// audio files when creating a SoundSourceProxy.
-    enum class ImportTrackMetadataMode {
+    enum class UpdateTrackFromSourceMode {
         // Import both track metadata and cover image once for new track objects.
         // Otherwise the request is ignored and the track object is not modified.
         Once,
@@ -116,13 +139,8 @@ class SoundSourceProxy {
     /// too many possible reasons for failure to consider that cannot be handled
     /// properly. The application log will contain warning messages for a detailed
     /// analysis in case unexpected behavior has been reported.
-    void updateTrackFromSource(
-            ImportTrackMetadataMode importTrackMetadataMode = ImportTrackMetadataMode::Default);
-
-    /// Parse only the metadata from the file without modifying
-    /// the referenced track.
-    mixxx::MetadataSource::ImportResult importTrackMetadata(
-            mixxx::TrackMetadata* pTrackMetadata) const;
+    bool updateTrackFromSource(
+            UpdateTrackFromSourceMode updateTrackMetadataMode = UpdateTrackFromSourceMode::Default);
 
     /// Opening the audio source through the proxy will update the
     /// audio properties of the corresponding track object. Returns
@@ -156,10 +174,6 @@ class SoundSourceProxy {
     explicit SoundSourceProxy(
             const QUrl& url,
             const mixxx::SoundSourceProviderPointer& pProvider = nullptr);
-
-    // Parse only the cover image from the file without modifying
-    // the referenced track.
-    QImage importCoverImage() const;
 
     const TrackPointer m_pTrack;
 

@@ -1,10 +1,9 @@
 #include <QtDebug>
 
-#include "test/mixxxtest.h"
-
-#include "track/track.h"
 #include "library/coverart.h"
 #include "sources/soundsourceproxy.h"
+#include "test/mixxxtest.h"
+#include "track/track.h"
 
 namespace {
 
@@ -55,15 +54,13 @@ TEST_F(TrackUpdateTest, parseModifiedCleanOnce) {
     auto pTrack = newTestTrackParsedModified();
     pTrack->markClean();
 
-    mixxx::TrackMetadata trackMetadataBefore;
-    pTrack->readTrackMetadata(&trackMetadataBefore);
+    const mixxx::TrackMetadata trackMetadataBefore = pTrack->getMetadata();
     auto coverInfoBefore = pTrack->getCoverInfo();
 
     SoundSourceProxy(pTrack).updateTrackFromSource(
-            SoundSourceProxy::ImportTrackMetadataMode::Once);
+            SoundSourceProxy::UpdateTrackFromSourceMode::Once);
 
-    mixxx::TrackMetadata trackMetadataAfter;
-    pTrack->readTrackMetadata(&trackMetadataAfter);
+    const mixxx::TrackMetadata trackMetadataAfter = pTrack->getMetadata();
     auto coverInfoAfter = pTrack->getCoverInfo();
 
     // Not updated
@@ -77,15 +74,13 @@ TEST_F(TrackUpdateTest, parseModifiedCleanAgainSkipCover) {
     auto pTrack = newTestTrackParsedModified();
     pTrack->markClean();
 
-    mixxx::TrackMetadata trackMetadataBefore;
-    pTrack->readTrackMetadata(&trackMetadataBefore);
+    const mixxx::TrackMetadata trackMetadataBefore = pTrack->getMetadata();
     auto coverInfoBefore = pTrack->getCoverInfo();
 
     SoundSourceProxy(pTrack).updateTrackFromSource(
-            SoundSourceProxy::ImportTrackMetadataMode::Again);
+            SoundSourceProxy::UpdateTrackFromSourceMode::Again);
 
-    mixxx::TrackMetadata trackMetadataAfter;
-    pTrack->readTrackMetadata(&trackMetadataAfter);
+    const mixxx::TrackMetadata trackMetadataAfter = pTrack->getMetadata();
     auto coverInfoAfter = pTrack->getCoverInfo();
 
     // Updated
@@ -103,15 +98,13 @@ TEST_F(TrackUpdateTest, parseModifiedCleanAgainUpdateCover) {
     pTrack->setCoverInfo(coverInfo);
     pTrack->markClean();
 
-    mixxx::TrackMetadata trackMetadataBefore;
-    pTrack->readTrackMetadata(&trackMetadataBefore);
+    const mixxx::TrackMetadata trackMetadataBefore = pTrack->getMetadata();
     auto coverInfoBefore = pTrack->getCoverInfo();
 
     SoundSourceProxy(pTrack).updateTrackFromSource(
-            SoundSourceProxy::ImportTrackMetadataMode::Again);
+            SoundSourceProxy::UpdateTrackFromSourceMode::Again);
 
-    mixxx::TrackMetadata trackMetadataAfter;
-    pTrack->readTrackMetadata(&trackMetadataAfter);
+    const mixxx::TrackMetadata trackMetadataAfter = pTrack->getMetadata();
     auto coverInfoAfter = pTrack->getCoverInfo();
 
     // Updated
@@ -124,15 +117,13 @@ TEST_F(TrackUpdateTest, parseModifiedCleanAgainUpdateCover) {
 TEST_F(TrackUpdateTest, parseModifiedDirtyAgain) {
     auto pTrack = newTestTrackParsedModified();
 
-    mixxx::TrackMetadata trackMetadataBefore;
-    pTrack->readTrackMetadata(&trackMetadataBefore);
+    const mixxx::TrackMetadata trackMetadataBefore = pTrack->getMetadata();
     auto coverInfoBefore = pTrack->getCoverInfo();
 
     SoundSourceProxy(pTrack).updateTrackFromSource(
-            SoundSourceProxy::ImportTrackMetadataMode::Again);
+            SoundSourceProxy::UpdateTrackFromSourceMode::Again);
 
-    mixxx::TrackMetadata trackMetadataAfter;
-    pTrack->readTrackMetadata(&trackMetadataAfter);
+    const mixxx::TrackMetadata trackMetadataAfter = pTrack->getMetadata();
     auto coverInfoAfter = pTrack->getCoverInfo();
 
     // Updated

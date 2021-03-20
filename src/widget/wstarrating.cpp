@@ -67,13 +67,17 @@ void WStarRating::slotTrackLoaded(TrackPointer pTrack) {
     }
 }
 
+void WStarRating::updateRating(int rating) {
+    m_starRating.setStarCount(rating);
+    update();
+}
+
 void WStarRating::updateRating() {
     if (m_pCurrentTrack) {
-        m_starRating.setStarCount(m_pCurrentTrack->getRating());
+        updateRating(m_pCurrentTrack->getRating());
     } else {
-        m_starRating.setStarCount(0);
+        updateRating(0);
     }
-    update();
 }
 
 void WStarRating::slotTrackChanged(TrackId trackId) {

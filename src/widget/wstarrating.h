@@ -22,6 +22,8 @@ class WStarRating : public WWidget {
     virtual void setup(const QDomNode& node, const SkinContext& context);
     QSize sizeHint() const override;
 
+    void updateRating(int rating);
+
   public slots:
     void slotTrackLoaded(TrackPointer pTrack = TrackPointer());
 

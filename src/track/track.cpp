@@ -5,6 +5,7 @@
 
 #include "engine/engine.h"
 #include "moc_track.cpp"
+#include "sources/metadatasource.h"
 #include "track/beatfactory.h"
 #include "track/beatmap.h"
 #include "track/trackref.h"
@@ -27,6 +28,16 @@ template<typename T>
 inline bool compareAndSet(T* pField, const T& value) {
     if (*pField != value) {
         *pField = value;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template<typename T>
+inline bool compareAndSet(T* pField, T&& value) {
+    if (*pField != value) {
+        *pField = std::move(value);
         return true;
     } else {
         return false;
@@ -113,8 +124,8 @@ void Track::relocate(
     // the updated location from the database.
 }
 
-void Track::importMetadata(
-        mixxx::TrackMetadata importedMetadata,
+void Track::replaceMetadataFromSource(
+        mixxx::TrackMetadata&& importedMetadata,
         const QDateTime& metadataSynchronized) {
     // Information stored in Serato tags is imported separately after
     // importing the metadata (see below). The Serato tags BLOB itself
@@ -125,7 +136,7 @@ void Track::importMetadata(
 
     {
         // enter locking scope
-        QMutexLocker lock(&m_qMutex);
+        QMutexLocker locked(&m_qMutex);
 
         // Preserve the both current bpm and key temporarily to avoid
         // overwriting with an inconsistent value. The bpm must always be
@@ -136,28 +147,11 @@ void Track::importMetadata(
         const auto importedKeyText = importedMetadata.getTrackInfo().getKey();
         importedMetadata.refTrackInfo().setKey(m_record.getMetadata().getTrackInfo().getKey());
 
-        bool modified = false;
-        // Only set the metadata synchronized flag (column `header_parsed`
-        // in the database) from false to true, but never reset it back to
-        // false. Otherwise file tags would be re-imported and overwrite
-        // the metadata stored in the database, e.g. after retrieving metadata
-        // from MusicBrainz!
-        // TODO: In the future this flag should become a time stamp
-        // to detect updates of files and then decide based on time
-        // stamps if file tags need to be re-imported.
-        if (!metadataSynchronized.isNull()) {
-            modified |= compareAndSet(
-                    m_record.ptrMetadataSynchronized(),
-                    true);
-        }
-
         const auto oldReplayGain =
                 m_record.getMetadata().getTrackInfo().getReplayGain();
-        if (m_record.getMetadata() != importedMetadata) {
-            m_record.setMetadata(std::move(importedMetadata));
-            // Don't use importedMetadata after move assignment!!
-            modified = true;
-        }
+        bool modified = m_record.replaceMetadataFromSource(
+                std::move(importedMetadata),
+                metadataSynchronized);
         const auto newReplayGain =
                 m_record.getMetadata().getTrackInfo().getReplayGain();
 
@@ -196,7 +190,7 @@ void Track::importMetadata(
             return;
         }
         // Explicitly unlock before emitting signals
-        markDirtyAndUnlock(&lock);
+        markDirtyAndUnlock(&locked);
 
         if (beatsAndBpmModified) {
             emitBeatsAndBpmUpdated(newBpm);
@@ -224,33 +218,33 @@ void Track::importMetadata(
     }
 }
 
-void Track::mergeImportedMetadata(
+bool Track::mergeExtraMetadataFromSource(
         const mixxx::TrackMetadata& importedMetadata) {
-    QMutexLocker lock(&m_qMutex);
-    if (m_record.mergeImportedMetadata(importedMetadata)) {
-        markDirtyAndUnlock(&lock);
+    QMutexLocker locked(&m_qMutex);
+    if (!m_record.mergeExtraMetadataFromSource(
+                importedMetadata)) {
+        return false;
     }
+    markDirtyAndUnlock(&locked);
+    return true;
 }
 
-void Track::readTrackMetadata(
-        mixxx::TrackMetadata* pTrackMetadata,
+mixxx::TrackRecord Track::getRecord(
+        bool* pDirty) const {
+    const QMutexLocker locked(&m_qMutex);
+    if (pDirty) {
+        *pDirty = m_bDirty;
+    }
+    return m_record;
+}
+
+mixxx::TrackMetadata Track::getMetadata(
         bool* pMetadataSynchronized) const {
-    DEBUG_ASSERT(pTrackMetadata);
-    QMutexLocker lock(&m_qMutex);
-    *pTrackMetadata = m_record.getMetadata();
+    const QMutexLocker locked(&m_qMutex);
     if (pMetadataSynchronized) {
         *pMetadataSynchronized = m_record.getMetadataSynchronized();
     }
-}
-
-void Track::readTrackRecord(
-        mixxx::TrackRecord* pTrackRecord,
-        bool* pDirty) const {
-    DEBUG_ASSERT(pTrackRecord);
-    QMutexLocker lock(&m_qMutex);
-    *pTrackRecord = m_record;
-    if (pDirty) {
-        *pDirty = m_bDirty;
+    return m_record.getMetadata();
     }
 }
 
@@ -292,10 +286,6 @@ bool Track::trySetBpmWhileLocked(double bpmValue) {
         return trySetBeatsWhileLocked(m_pBeats->setBpm(bpmValue));
     }
     return false;
-}
-
-QString Track::getBpmText() const {
-    return QString("%1").arg(getBpm(), 3,'f',1);
 }
 
 bool Track::trySetBpm(double bpmValue) {
@@ -450,19 +440,18 @@ void Track::setDuration(double duration) {
     setDuration(mixxx::Duration::fromSeconds(duration));
 }
 
-double Track::getDuration(DurationRounding rounding) const {
+double Track::getDuration() const {
     QMutexLocker lock(&m_qMutex);
-    const auto durationSeconds =
-            m_record.getMetadata().getStreamInfo().getDuration().toDoubleSeconds();
-    switch (rounding) {
-    case DurationRounding::SECONDS:
-        return std::round(durationSeconds);
-    default:
-        return durationSeconds;
-    }
+    return m_record.getMetadata().getStreamInfo().getDuration().toDoubleSeconds();
 }
 
-QString Track::getDurationText(mixxx::Duration::Precision precision) const {
+int Track::getDurationInt() const {
+    QMutexLocker lock(&m_qMutex);
+    return static_cast<int>(m_record.getMetadata().getDurationSecondsRounded());
+}
+
+QString Track::getDurationText(
+        mixxx::Duration::Precision precision) const {
     QMutexLocker lock(&m_qMutex);
     return m_record.getMetadata().getDurationText(precision);
 }
@@ -1334,14 +1323,8 @@ CoverInfo Track::getCoverInfoWithLocation() const {
 }
 
 ExportTrackMetadataResult Track::exportMetadata(
-        mixxx::MetadataSourcePointer pMetadataSource,
-        UserSettingsPointer pConfig) {
-    VERIFY_OR_DEBUG_ASSERT(pMetadataSource) {
-        kLogger.warning()
-                << "Cannot export track metadata:"
-                << getLocation();
-        return ExportTrackMetadataResult::Failed;
-    }
+        const UserSettingsPointer& pConfig,
+        const mixxx::MetadataSource& metadataSource) {
     // Locking shouldn't be necessary here, because this function will
     // be called after all references to the object have been dropped.
     // But it doesn't hurt much, so let's play it safe ;)
@@ -1418,13 +1401,14 @@ ExportTrackMetadataResult Track::exportMetadata(
     // Otherwise floating-point values like the bpm value might become
     // inconsistent with the actual value stored by the beat grid!
     mixxx::TrackMetadata normalizedFromRecord;
-    if ((pMetadataSource->importTrackMetadataAndCoverImage(&importedFromFile, nullptr).first ==
-            mixxx::MetadataSource::ImportResult::Succeeded)) {
+    if ((metadataSource.importTrackMetadataAndCoverImage(
+                               &importedFromFile, nullptr)
+                        .first == mixxx::MetadataSource::ImportResult::Succeeded)) {
         // Prevent overwriting any file tags that are not yet stored in the
         // library database! This will in turn update the current metadata
         // that is stored in the database. New columns that need to be populated
         // from file tags cannot be filled during a database migration.
-        m_record.mergeImportedMetadata(importedFromFile);
+        m_record.mergeExtraMetadataFromSource(importedFromFile);
 
         // Prepare export by cloning and normalizing the metadata
         normalizedFromRecord = m_record.getMetadata();
@@ -1485,7 +1469,7 @@ ExportTrackMetadataResult Track::exportMetadata(
             << "New metadata (modified)"
             << normalizedFromRecord;
     const auto trackMetadataExported =
-            pMetadataSource->exportTrackMetadata(normalizedFromRecord);
+            metadataSource.exportTrackMetadata(normalizedFromRecord);
     switch (trackMetadataExported.first) {
     case mixxx::MetadataSource::ExportResult::Succeeded:
         // After successfully exporting the metadata we record the fact

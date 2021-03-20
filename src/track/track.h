@@ -108,13 +108,9 @@ class Track : public QObject {
 
     void setDuration(mixxx::Duration duration);
     void setDuration(double duration);
-    double getDuration() const {
-        return getDuration(DurationRounding::NONE);
-    }
+    double getDuration() const;
     // Returns the duration rounded to seconds
-    int getDurationInt() const {
-        return static_cast<int>(getDuration(DurationRounding::SECONDS));
-    }
+    int getDurationInt() const;
     // Returns the duration formatted as a string (H:MM:SS or H:MM:SS.cc or H:MM:SS.mmm)
     QString getDurationText(mixxx::Duration::Precision precision) const;
 
@@ -138,7 +134,9 @@ class Track : public QObject {
         return getBpmWhileLocked().getValue();
     }
     // Returns BPM as a string
-    QString getBpmText() const;
+    QString getBpmText() const {
+        return mixxx::Bpm::displayValueText(getBpm());
+    }
 
     // A track with a locked BPM will not be re-analyzed by the beats or bpm
     // analyzer.
@@ -333,20 +331,14 @@ class Track : public QObject {
     bool refreshCoverImageDigest(
             const QImage& loadedImage = QImage());
 
-    // Set/get track metadata and cover art (optional) all at once.
-    void importMetadata(
-            mixxx::TrackMetadata importedMetadata,
-            const QDateTime& metadataSynchronized = QDateTime());
-    // Merge additional metadata that is not (yet) stored in the database
-    // and only available from file tags.
-    void mergeImportedMetadata(
-            const mixxx::TrackMetadata& importedMetadata);
+    void replaceMetadataFromSource(
+            mixxx::TrackMetadata&& importedMetadata,
+            const QDateTime& metadataSynchronized);
 
-    void readTrackMetadata(
-            mixxx::TrackMetadata* pTrackMetadata,
+    mixxx::TrackMetadata getMetadata(
             bool* pMetadataSynchronized = nullptr) const;
-    void readTrackRecord(
-            mixxx::TrackRecord* pTrackRecord,
+
+    mixxx::TrackRecord getRecord(
             bool* pDirty = nullptr) const;
 
     // Mark the track dirty if it isn't already.
@@ -450,15 +442,14 @@ class Track : public QObject {
     void importPendingCueInfosMarkDirtyAndUnlock(
             QMutexLocker* pLock);
 
-    enum class DurationRounding {
-        SECONDS, // rounded to full seconds
-        NONE     // unmodified
-    };
-    double getDuration(DurationRounding rounding) const;
+    // Merge additional metadata that is not (yet) stored in the database
+    // and only available from file tags.
+    bool mergeExtraMetadataFromSource(
+            const mixxx::TrackMetadata& importedMetadata);
 
     ExportTrackMetadataResult exportMetadata(
-            mixxx::MetadataSourcePointer pMetadataSource,
-            UserSettingsPointer pConfig);
+            const UserSettingsPointer& pConfig,
+            const mixxx::MetadataSource& metadataSource);
 
     // Information about the actual properties of the
     // audio stream is only available after opening the

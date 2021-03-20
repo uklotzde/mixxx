@@ -117,8 +117,7 @@ class SoundSourceProxyTest : public MixxxTest {
             const CSAMPLE* actual,
             const char* errorMessage) {
         for (SINT i = 0; i < size; ++i) {
-            EXPECT_NEAR(expected[i], actual[i],
-                    kMaxDecodingError) << errorMessage;
+            EXPECT_NEAR(expected[i], actual[i], kMaxDecodingError) << errorMessage;
         }
     }
 
@@ -137,11 +136,12 @@ class SoundSourceProxyTest : public MixxxTest {
             EXPECT_FALSE(nextRange.empty());
             EXPECT_TRUE(nextRange.isSubrangeOf(skipRange));
             const auto readRange = pAudioSource->readSampleFrames(
-                    mixxx::WritableSampleFrames(
-                            nextRange,
-                            mixxx::SampleBuffer::WritableSlice(
-                                    m_skipSampleBuffer.data(),
-                                    m_skipSampleBuffer.size()))).frameIndexRange();
+                                                       mixxx::WritableSampleFrames(
+                                                               nextRange,
+                                                               mixxx::SampleBuffer::WritableSlice(
+                                                                       m_skipSampleBuffer.data(),
+                                                                       m_skipSampleBuffer.size())))
+                                           .frameIndexRange();
             if (readRange.empty()) {
                 return skippedRange;
             }
@@ -158,7 +158,7 @@ class SoundSourceProxyTest : public MixxxTest {
     }
 
     SoundSourceProxyTest()
-        : m_skipSampleBuffer(kMaxReadFrameCount) {
+            : m_skipSampleBuffer(kMaxReadFrameCount) {
     }
 
   private:
@@ -228,7 +228,7 @@ TEST_F(SoundSourceProxyTest, readNoTitle) {
 
     // Test a reload also works
     pTrack1->setTitle("");
-    proxy1.updateTrackFromSource(SoundSourceProxy::ImportTrackMetadataMode::Again);
+    proxy1.updateTrackFromSource(SoundSourceProxy::UpdateTrackFromSourceMode::Again);
     EXPECT_EQ("empty", pTrack1->getTitle());
 
     // Test a file with other metadata but no title
@@ -240,7 +240,7 @@ TEST_F(SoundSourceProxyTest, readNoTitle) {
 
     // Test a reload also works
     pTrack2->setTitle("");
-    proxy2.updateTrackFromSource(SoundSourceProxy::ImportTrackMetadataMode::Again);
+    proxy2.updateTrackFromSource(SoundSourceProxy::UpdateTrackFromSourceMode::Again);
     EXPECT_EQ("cover-test-png", pTrack2->getTitle());
 
     // Test a file with a title
@@ -254,13 +254,12 @@ TEST_F(SoundSourceProxyTest, readNoTitle) {
 TEST_F(SoundSourceProxyTest, TOAL_TPE2) {
     auto pTrack = Track::newTemporary(kTestDir, "TOAL_TPE2.mp3");
     SoundSourceProxy proxy(pTrack);
-    mixxx::TrackMetadata trackMetadata;
-    EXPECT_EQ(mixxx::MetadataSource::ImportResult::Succeeded, proxy.importTrackMetadata(&trackMetadata));
-    EXPECT_EQ("TITLE2", trackMetadata.getTrackInfo().getArtist());
-    EXPECT_EQ("ARTIST", trackMetadata.getAlbumInfo().getTitle());
-    EXPECT_EQ("TITLE", trackMetadata.getAlbumInfo().getArtist());
+    ASSERT_TRUE(proxy.updateTrackFromSource());
+    EXPECT_EQ("TITLE2", pTrack->getArtist());
+    EXPECT_EQ("ARTIST", pTrack->getAlbum());
+    EXPECT_EQ("TITLE", pTrack->getAlbumArtist());
     // The COMM:iTunPGAP comment should not be read
-    EXPECT_TRUE(trackMetadata.getTrackInfo().getComment().isNull());
+    EXPECT_TRUE(pTrack->getComment().isNull());
 }
 
 TEST_F(SoundSourceProxyTest, seekForwardBackward) {

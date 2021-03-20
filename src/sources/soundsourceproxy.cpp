@@ -315,21 +315,34 @@ TrackPointer SoundSourceProxy::importTemporaryTrack(
     return pTrack;
 }
 
-//static
-QImage SoundSourceProxy::importTemporaryCoverImage(
-        mixxx::FileAccess trackFileAccess) {
+std::pair<mixxx::MetadataSource::ImportResult, QDateTime>
+SoundSourceProxy::importTrackMetadataAndCoverImageConcurrently(
+        mixxx::FileAccess trackFileAccess,
+        mixxx::TrackMetadata* pTrackMetadata,
+        QImage* pCoverImage) {
     if (!trackFileAccess.info().checkFileExists()) {
         // Silently ignore missing files to avoid spaming the log:
         // https://bugs.launchpad.net/mixxx/+bug/1875237
-        return QImage();
+        return std::make_pair(mixxx::MetadataSource::ImportResult::Unavailable, QDateTime());
     }
-    TrackPointer pTrack = Track::newTemporary(std::move(trackFileAccess));
-    // Lock the track cache while populating the temporary track
-    // object to ensure that no metadata is exported into any file
-    // while reading from this file. Since locking individual files
-    // is not possible and the whole cache is locked.
+    TrackPointer pTrack;
+    // Lock the global track cache while accessing the file to ensure
+    // that no metadata is written. Since locking individual files
+    // is not possible the whole cache has to be locked.
     GlobalTrackCacheLocker locker;
-    return SoundSourceProxy(pTrack).importCoverImage();
+    pTrack = locker.lookupTrackByRef(TrackRef::fromFileInfo(trackFileAccess.info()));
+    if (pTrack) {
+        // We can safely unlock the cache if the track object is already cached.
+        locker.unlockCache();
+    } else {
+        // If the track object is not cached we need to keep the cache
+        // locked and create a temporary track object instead.
+        pTrack = Track::newTemporary(trackFileAccess);
+    }
+    const auto proxy = SoundSourceProxy(pTrack);
+    return proxy.importTrackMetadataAndCoverImage(
+            pTrackMetadata,
+            pCoverImage);
 }
 
 //static
@@ -359,7 +372,7 @@ SoundSourceProxy::exportTrackMetadataBeforeSaving(Track* pTrack, UserSettingsPoi
         pMetadataSource = proxy.m_pSoundSource;
     }
     if (pMetadataSource) {
-        return pTrack->exportMetadata(pMetadataSource, pConfig);
+        return pTrack->exportMetadata(pConfig, *pMetadataSource);
     } else {
         kLogger.warning()
                 << "Unable to export track metadata into file"
@@ -489,19 +502,32 @@ void SoundSourceProxy::initSoundSource(
     }
 }
 
-void SoundSourceProxy::updateTrackFromSource(
-        ImportTrackMetadataMode importTrackMetadataMode) {
+std::pair<mixxx::MetadataSource::ImportResult, QDateTime>
+SoundSourceProxy::importTrackMetadataAndCoverImage(
+        mixxx::TrackMetadata* pTrackMetadata, QImage* pCoverImage) const {
+    if (!m_pSoundSource) {
+        // The file doesn't seem to be readable or the file format
+        // is not supported.
+        return std::make_pair(mixxx::MetadataSource::ImportResult::Unavailable, QDateTime());
+    }
+    return m_pSoundSource->importTrackMetadataAndCoverImage(
+            pTrackMetadata,
+            pCoverImage);
+}
+
+bool SoundSourceProxy::updateTrackFromSource(
+        UpdateTrackFromSourceMode updateTrackFromSourceMode) {
     DEBUG_ASSERT(m_pTrack);
 
     if (getUrl().isEmpty()) {
         // Silently skip tracks without a corresponding file
-        return; // abort
+        return false; // abort
     }
     if (!m_pSoundSource) {
         kLogger.warning()
                 << "Unable to update track from unsupported file type"
                 << getUrl().toString();
-        return; // abort
+        return false; // abort
     }
 
     // The SoundSource provides the actual type of the corresponding file
@@ -512,19 +538,9 @@ void SoundSourceProxy::updateTrackFromSource(
     // values if the corresponding file tags are missing. Depending
     // on the file type some kind of tags might even not be supported
     // at all and this information would get lost entirely otherwise!
-    mixxx::TrackMetadata trackMetadata;
-    bool metadataSynchronized = false;
-    m_pTrack->readTrackMetadata(&trackMetadata, &metadataSynchronized);
-    // If the file tags have already been parsed at least once, the
-    // existing track metadata should not be updated implicitly, i.e.
-    // if the user did not explicitly choose to (re-)import metadata
-    // explicitly from this file.
-    bool mergeImportedMetadata = false;
-    if (metadataSynchronized &&
-            (importTrackMetadataMode == ImportTrackMetadataMode::Once)) {
-        // No (re-)import needed or desired, only merge missing properties
-        mergeImportedMetadata = true;
-    }
+    bool metadataSynchronized;
+    mixxx::TrackMetadata trackMetadata =
+            m_pTrack->getMetadata(&metadataSynchronized);
 
     // Save for later to replace the unreliable and imprecise audio
     // properties imported from file tags (see below).
@@ -536,7 +552,18 @@ void SoundSourceProxy::updateTrackFromSource(
     QImage coverImg;
     DEBUG_ASSERT(coverImg.isNull());
     QImage* pCoverImg = nullptr; // pointer also serves as a flag
-    if (!mergeImportedMetadata) {
+
+    // If the file tags have already been parsed at least once, the
+    // existing track metadata should not be updated implicitly, i.e.
+    // if the user did not explicitly choose to (re-)import metadata
+    // explicitly from this file.
+    bool mergeExtraMetadataFromSource = false;
+    if (metadataSynchronized &&
+            (updateTrackFromSourceMode == UpdateTrackFromSourceMode::Once)) {
+        // No (re-)import needed or desired, only merge missing properties
+        mergeExtraMetadataFromSource = true;
+    } else {
+        // Import the cover initially or when a reimport has been requested
         const auto coverInfo = m_pTrack->getCoverInfo();
         if (coverInfo.source == CoverInfo::USER_SELECTED &&
                 coverInfo.type == CoverInfo::FILE) {
@@ -547,35 +574,40 @@ void SoundSourceProxy::updateTrackFromSource(
                         << getUrl().toString();
             }
         } else {
-            // (Re-)import embedded cover art
+            // Request reimport of embedded cover art
             pCoverImg = &coverImg;
         }
     }
 
     // Parse the tags stored in the audio file
-    auto metadataImported =
-            m_pSoundSource->importTrackMetadataAndCoverImage(
-                    &trackMetadata, pCoverImg);
-    if (metadataImported.first == mixxx::MetadataSource::ImportResult::Failed) {
+    auto metadataImportedFromSource =
+            importTrackMetadataAndCoverImage(
+                    &trackMetadata,
+                    pCoverImg);
+    if (metadataImportedFromSource.first ==
+            mixxx::MetadataSource::ImportResult::Failed) {
         kLogger.warning()
                 << "Failed to import track metadata"
                 << (pCoverImg ? "and embedded cover art" : "")
                 << "from file"
                 << getUrl().toString();
         // make sure that the trackMetadata was not messed up due to the failure
-        m_pTrack->readTrackMetadata(&trackMetadata, &metadataSynchronized);
+        trackMetadata = m_pTrack->getMetadata();
     }
 
     // Partial import
-    if (mergeImportedMetadata) {
+    if (mergeExtraMetadataFromSource) {
         // No reimport of embedded cover image desired in this case
         DEBUG_ASSERT(!pCoverImg);
-        if (metadataImported.first == mixxx::MetadataSource::ImportResult::Succeeded) {
+        if (metadataImportedFromSource.first == mixxx::MetadataSource::ImportResult::Succeeded) {
             // Partial import of properties that are not (yet) stored
             // in the database
-            m_pTrack->mergeImportedMetadata(trackMetadata);
-        } // else: Nothing to do if no metadata has been imported
-        return;
+            return m_pTrack->mergeExtraMetadataFromSource(
+                    trackMetadata);
+        } else {
+            // Nothing to do if no metadata has been imported
+            return false;
+        }
     }
 
     // Full import
@@ -641,24 +673,28 @@ void SoundSourceProxy::updateTrackFromSource(
         if (trackMetadata.refTrackInfo().parseArtistTitleFromFileName(
                     fileInfo.fileName(), splitArtistTitle)) {
             // Pretend that metadata import succeeded
-            metadataImported.first = mixxx::MetadataSource::ImportResult::Succeeded;
-            if (metadataImported.second.isNull()) {
+            metadataImportedFromSource.first = mixxx::MetadataSource::ImportResult::Succeeded;
+            if (metadataImportedFromSource.second.isNull()) {
                 // Since this is also some kind of metadata import, we mark the
                 // track's metadata as synchronized with the time stamp of the file.
-                metadataImported.second = fileInfo.lastModified();
+                metadataImportedFromSource.second = fileInfo.lastModified();
             }
         }
     }
 
     // Do not continue with unknown and maybe invalid metadata!
-    if (metadataImported.first != mixxx::MetadataSource::ImportResult::Succeeded) {
-        return;
+    if (metadataImportedFromSource.first != mixxx::MetadataSource::ImportResult::Succeeded) {
+        return false;
     }
 
-    m_pTrack->importMetadata(trackMetadata, metadataImported.second);
+    m_pTrack->replaceMetadataFromSource(
+            std::move(trackMetadata),
+            metadataImportedFromSource.second);
 
-    bool pendingBeatsImport = m_pTrack->getBeatsImportStatus() == Track::ImportStatus::Pending;
-    bool pendingCueImport = m_pTrack->getCueImportStatus() == Track::ImportStatus::Pending;
+    const bool pendingBeatsImport =
+            m_pTrack->getBeatsImportStatus() == Track::ImportStatus::Pending;
+    const bool pendingCueImport =
+            m_pTrack->getCueImportStatus() == Track::ImportStatus::Pending;
     if (pendingBeatsImport || pendingCueImport) {
         // Try to open the audio source once to determine the actual
         // stream properties for finishing the pending import.
@@ -684,26 +720,8 @@ void SoundSourceProxy::updateTrackFromSource(
         DEBUG_ASSERT(coverInfo.source == CoverInfo::GUESSED);
         m_pTrack->setCoverInfo(coverInfo);
     }
-}
 
-mixxx::MetadataSource::ImportResult SoundSourceProxy::importTrackMetadata(mixxx::TrackMetadata* pTrackMetadata) const {
-    if (m_pSoundSource) {
-        return m_pSoundSource->importTrackMetadataAndCoverImage(pTrackMetadata, nullptr).first;
-    } else {
-        return mixxx::MetadataSource::ImportResult::Unavailable;
-    }
-}
-
-QImage SoundSourceProxy::importCoverImage() const {
-    if (m_pSoundSource) {
-        QImage coverImg;
-        if (m_pSoundSource->importTrackMetadataAndCoverImage(nullptr, &coverImg).first ==
-                mixxx::MetadataSource::ImportResult::Succeeded) {
-            return coverImg;
-        }
-    }
-    // Failed or unavailable
-    return QImage();
+    return true;
 }
 
 mixxx::AudioSourcePointer SoundSourceProxy::openAudioSource(
