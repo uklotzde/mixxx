@@ -115,6 +115,10 @@ DlgPrefLibrary::DlgPrefLibrary(
             &QCheckBox::toggled,
             this,
             &DlgPrefLibrary::slotSyncTrackMetadataExportToggled);
+    connect(checkBox_SyncTrackMetadataImport,
+            &QCheckBox::toggled,
+            this,
+            &DlgPrefLibrary::slotSyncTrackMetadataImportClicked);
 
     // Initialize the controls after all slots have been connected
     slotUpdate();
@@ -122,6 +126,13 @@ DlgPrefLibrary::DlgPrefLibrary(
 
 void DlgPrefLibrary::slotShow() {
     m_bAddedDirectory = false;
+
+    // Initialize the controls when the dialog is displayed
+    // for the first time.
+    slotUpdate();
+
+    // Ensure that all dependencies between controls are updated
+    slotSyncTrackMetadataExportToggled();
 }
 
 void DlgPrefLibrary::slotHide() {
@@ -177,6 +188,7 @@ void DlgPrefLibrary::initializeDirList() {
 void DlgPrefLibrary::slotResetToDefaults() {
     checkBox_library_scan->setChecked(false);
     checkBox_SyncTrackMetadataExport->setChecked(false);
+    checkBox_SyncTrackMetadataImport->setChecked(false);
     checkBox_SeratoMetadataExport->setChecked(false);
     checkBox_use_relative_path->setChecked(false);
     checkBox_show_rhythmbox->setChecked(true);
@@ -198,6 +210,8 @@ void DlgPrefLibrary::slotUpdate() {
             ConfigKey("[Library]","RescanOnStartup"), false));
     checkBox_SyncTrackMetadataExport->setChecked(m_pConfig->getValue(
             ConfigKey("[Library]","SyncTrackMetadataExport"), false));
+    checkBox_SyncTrackMetadataImport->setChecked(m_pConfig->getValue(
+            ConfigKey("[Library]", "SyncTrackMetadataImport"), false));
     checkBox_SeratoMetadataExport->setChecked(m_pConfig->getValue(
             ConfigKey("[Library]", "SeratoMetadataExport"), false));
     checkBox_use_relative_path->setChecked(m_pConfig->getValue(
@@ -365,6 +379,8 @@ void DlgPrefLibrary::slotApply() {
                 ConfigValue((int)checkBox_library_scan->isChecked()));
     m_pConfig->set(ConfigKey("[Library]","SyncTrackMetadataExport"),
                 ConfigValue((int)checkBox_SyncTrackMetadataExport->isChecked()));
+    m_pConfig->set(ConfigKey("[Library]", "SyncTrackMetadataImport"),
+            ConfigValue((int)checkBox_SyncTrackMetadataImport->isChecked()));
     m_pConfig->set(ConfigKey("[Library]", "SeratoMetadataExport"),
             ConfigValue(static_cast<int>(checkBox_SeratoMetadataExport->isChecked())));
     m_pConfig->set(ConfigKey("[Library]","UseRelativePathOnExport"),
@@ -453,5 +469,36 @@ void DlgPrefLibrary::slotSearchDebouncingTimeoutMillisChanged(int searchDebounci
 void DlgPrefLibrary::slotSyncTrackMetadataExportToggled() {
     if (isVisible() && checkBox_SyncTrackMetadataExport->isChecked()) {
         mixxx::DlgTrackMetadataExport::showMessageBoxOncePerSession();
+    }
+    // Automatic import of track metadata from audio files is only useful
+    // if the files are kept synchronized with the library, i.e. when full
+    // two-way synchronization is enabled!
+    if (checkBox_SyncTrackMetadataExport->isChecked()) {
+        checkBox_SyncTrackMetadataImport->setEnabled(true);
+    } else {
+        checkBox_SyncTrackMetadataImport->setChecked(false);
+        checkBox_SyncTrackMetadataImport->setEnabled(false);
+    }
+}
+
+void DlgPrefLibrary::slotSyncTrackMetadataImportClicked(bool checked) {
+    if (isVisible() && checked) {
+        const QMessageBox::StandardButton answer = QMessageBox::warning(NULL,
+                tr("Import & Update Track Metadata"),
+                tr("Enabling this option will unconditionally re-import track "
+                   "metadata from the corresponding file "
+                   "and update track metadata in your library before "
+                   "selecting/loading/editing a track. "
+                   "This will keep the library synchronized with the metadata "
+                   "stored in external files, "
+                   "but you should be aware of the consequences and are "
+                   "encouraged to backup your library before enabling this "
+                   "option!\n\n"
+                   "Are you really sure that you want to enable two-way "
+                   "synchronization of track metadata?"),
+                QMessageBox::Yes | QMessageBox::No);
+        if (QMessageBox::Yes != answer) {
+            checkBox_SyncTrackMetadataImport->setChecked(false);
+        }
     }
 }

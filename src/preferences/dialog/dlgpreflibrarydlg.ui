@@ -134,11 +134,18 @@
       <item row="0" column="0" colspan="2">
        <widget class="QCheckBox" name="checkBox_SyncTrackMetadataExport">
         <property name="text">
-         <string>Automatically write modified track metadata from the library into file tags</string>
+         <string>Automatically write modified track metadata from the library into file tags (one-way sync)</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
+      <item row="1" column="0" colspan="2">
+       <widget class="QCheckBox" name="checkBox_SyncTrackMetadataImport">
+        <property name="text">
+         <string>Automatically update track metadata in the library from file tags (two-way sync)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
        <widget class="QCheckBox" name="checkBox_SeratoMetadataExport">
         <property name="text">
          <string>Write Serato Metadata to files (experimental)</string>
