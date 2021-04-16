@@ -9,6 +9,34 @@ namespace {
 
 const Logger kLogger("TrackRecord");
 
+inline TagScore::value_t convertRatingToTagScore(int rating) {
+    VERIFY_OR_DEBUG_ASSERT(rating >= TrackRecord::kMinRating) {
+        return TagScore::kMinValue;
+    }
+    VERIFY_OR_DEBUG_ASSERT(rating <= TrackRecord::kMaxRating) {
+        return TagScore::kMaxValue;
+    }
+    const auto ratingScore =
+            static_cast<TagScore::value_t>(rating - TrackRecord::kMinRating) /
+            (TrackRecord::kMaxRating - TrackRecord::kMinRating);
+    DEBUG_ASSERT(TagScore::isValidValue(ratingScore));
+    return ratingScore;
+}
+
+inline int convertTagScoreToRating(TagScore::value_t ratingScore) {
+    VERIFY_OR_DEBUG_ASSERT(ratingScore >= TagScore::kMinValue) {
+        return TrackRecord::kMinRating;
+    }
+    VERIFY_OR_DEBUG_ASSERT(ratingScore <= TagScore::kMaxValue) {
+        return TrackRecord::kMaxRating;
+    }
+    const auto ratingValue = (ratingScore - TagScore::kMinValue) /
+            (TagScore::kMaxValue - TagScore::kMinValue);
+    const auto rating = static_cast<int>(std::round(ratingValue));
+    DEBUG_ASSERT(TrackRecord::isValidRating(rating));
+    return rating;
+}
+
 } // anonymous namespace
 
 /*static*/ const QString TrackRecord::kTrackTotalPlaceholder = QStringLiteral("//");
@@ -16,8 +44,38 @@ const Logger kLogger("TrackRecord");
 TrackRecord::TrackRecord(TrackId id)
         : m_id(std::move(id)),
           m_metadataSynchronized(false),
-          m_rating(0),
           m_bpmLocked(false) {
+}
+
+int TrackRecord::getRatingFromCustomTags(
+        const CustomTags& customTags) {
+    const auto optScore = customTags.getTagScore(
+            CustomTags::kFacetRating,
+            CustomTags::kLabelMixxxOrg);
+    if (!optScore) {
+        return kNoRating;
+    }
+    return convertTagScoreToRating(*optScore);
+}
+
+bool TrackRecord::updateRatingIntoCustomTags(
+        CustomTags* pCustomTags,
+        int rating) {
+    VERIFY_OR_DEBUG_ASSERT(pCustomTags) {
+        return false;
+    }
+    const auto ratingScore = convertRatingToTagScore(rating);
+    if (ratingScore > TagScore::kMinValue) {
+        return pCustomTags->addOrReplaceTag(
+                Tag(CustomTags::kLabelMixxxOrg, TagScore(ratingScore)),
+                CustomTags::kFacetRating);
+    } else {
+        DEBUG_ASSERT(rating == kNoRating);
+        DEBUG_ASSERT(ratingScore == TagScore::kMinValue);
+        return pCustomTags->removeTag(
+                CustomTags::kLabelMixxxOrg,
+                CustomTags::kFacetRating);
+    }
 }
 
 void TrackRecord::setKeys(const Keys& keys) {
@@ -109,8 +167,10 @@ bool copyIfNotEmpty(
 } // anonymous namespace
 
 bool TrackRecord::replaceMetadataFromSource(
+        const TaggingConfig& taggingConfig,
         TrackMetadata&& importedMetadata,
         const QDateTime& metadataSynchronized) {
+    importedMetadata.synchronizeTextFieldsWithCustomTags(taggingConfig);
     bool modified = false;
     if (getMetadata() != importedMetadata) {
         refMetadata() = std::move(importedMetadata);
@@ -132,6 +192,7 @@ bool TrackRecord::replaceMetadataFromSource(
 }
 
 bool TrackRecord::mergeExtraMetadataFromSource(
+        const TaggingConfig& taggingConfig,
         const TrackMetadata& importedMetadata) {
     bool modified = false;
     TrackInfo* pMergedTrackInfo = m_metadata.ptrTrackInfo();
@@ -226,6 +287,9 @@ bool TrackRecord::mergeExtraMetadataFromSource(
             pMergedAlbumInfo->ptrRecordLabel(),
             importedAlbumInfo.getRecordLabel());
 #endif // __EXTRA_METADATA__
+    // Custom tags have been added later and the existing file tags might have
+    // never been synchronized with the custom tags.
+    modified |= synchronizeTextFieldsWithCustomTags(taggingConfig);
     return modified;
 }
 

@@ -25,6 +25,7 @@
 #include "moc_wtrackmenu.cpp"
 #include "preferences/colorpalettesettings.h"
 #include "sources/soundsourceproxy.h"
+#include "tagging/taggingui.h"
 #include "track/track.h"
 #include "util/desktophelper.h"
 #include "util/parented_ptr.h"
@@ -163,6 +164,21 @@ void WTrackMenu::createMenus() {
                 this,
                 [this](const QString& searchQuery) {
                     m_pLibrary->searchTracksInCollection(searchQuery);
+                });
+    }
+    if (featureIsEnabled(Feature::CustomTags)) {
+        m_pCustomTagsMenu = make_parented<mixxx::TrackCustomTagsMenu>(
+                m_pConfig,
+                m_pLibrary->trackCollections(),
+                tr("Custom Tags"),
+                this);
+        connect(m_pCustomTagsMenu,
+                &QMenu::aboutToShow,
+                this,
+                [this] {
+                    const auto selectedTrackIds = getTrackIds();
+                    m_pCustomTagsMenu->setEnabled(!selectedTrackIds.isEmpty());
+                    m_pCustomTagsMenu->rebuild(selectedTrackIds);
                 });
     }
 }
@@ -420,6 +436,10 @@ void WTrackMenu::setupActions() {
     if (featureIsEnabled(Feature::Color)) {
         m_pColorMenu->addAction(m_pColorPickerAction);
         addMenu(m_pColorMenu);
+    }
+
+    if (featureIsEnabled(Feature::CustomTags)) {
+        addMenu(m_pCustomTagsMenu);
     }
 
     if (featureIsEnabled(Feature::Metadata)) {
@@ -900,6 +920,12 @@ void WTrackMenu::slotOpenInFileBrowser() {
 namespace {
 
 class ImportMetadataFromFileTagsTrackPointerOperation : public mixxx::TrackPointerOperation {
+  public:
+    explicit ImportMetadataFromFileTagsTrackPointerOperation(
+            const TrackCollectionManager* pTrackCollectionManager)
+            : m_pTrackCollectionManager(pTrackCollectionManager) {
+    }
+
   private:
     void doApply(
             const TrackPointer& pTrack) const override {
@@ -907,8 +933,11 @@ class ImportMetadataFromFileTagsTrackPointerOperation : public mixxx::TrackPoint
         // to override the information within Mixxx! Custom cover art must be
         // reloaded separately.
         SoundSourceProxy(pTrack).updateTrackFromSource(
+                m_pTrackCollectionManager->taggingConfig(),
                 SoundSourceProxy::UpdateTrackFromSourceMode::Again);
     }
+
+    const TrackCollectionManager* const m_pTrackCollectionManager;
 };
 
 } // anonymous namespace
@@ -917,7 +946,8 @@ void WTrackMenu::slotImportMetadataFromFileTags() {
     const auto progressLabelText =
             tr("Importing metadata of %n track(s) from file tags", "", getTrackCount());
     const auto trackOperator =
-            ImportMetadataFromFileTagsTrackPointerOperation();
+            ImportMetadataFromFileTagsTrackPointerOperation(
+                    m_pLibrary->trackCollections());
     applyTrackPointerOperation(
             progressLabelText,
             &trackOperator,
@@ -1580,6 +1610,7 @@ void WTrackMenu::slotShowDlgTrackInfo() {
     }
     // Create a fresh dialog on invocation
     m_pDlgTrackInfo = std::make_unique<DlgTrackInfo>(
+            m_pLibrary->trackCollections(),
             m_pTrackModel);
     connect(m_pDlgTrackInfo.get(),
             &QDialog::finished,
@@ -1604,6 +1635,7 @@ void WTrackMenu::slotShowDlgTagFetcher() {
     }
     // Create a fresh dialog on invocation
     m_pDlgTagFetcher = std::make_unique<DlgTagFetcher>(
+            m_pLibrary->trackCollections(),
             m_pTrackModel);
     connect(m_pDlgTagFetcher.get(),
             &QDialog::finished,
@@ -1788,6 +1820,8 @@ bool WTrackMenu::featureIsEnabled(Feature flag) const {
         return m_pTrackModel->hasCapabilities(TrackModel::Capability::EditMetadata);
     case Feature::SearchRelated:
         return m_pLibrary != nullptr;
+    case Feature::CustomTags:
+        return m_pTrackModel->hasCapabilities(TrackModel::Capability::EditMetadata);
     default:
         DEBUG_ASSERT(!"unreachable");
         return false;

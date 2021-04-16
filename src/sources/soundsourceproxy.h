@@ -8,6 +8,7 @@
 namespace mixxx {
 
 class FileAccess;
+class TaggingConfig;
 
 } // namespace mixxx
 
@@ -46,13 +47,6 @@ class SoundSourceProxy {
     }
     static mixxx::SoundSourceProviderPointer getPrimaryProviderForFileExtension(
             const QString& fileExtension);
-
-    // The following import functions ensure that the file will not be
-    // written while reading it!
-    static TrackPointer importTemporaryTrack(
-            mixxx::FileAccess trackFileAccess);
-    static QImage importTemporaryCoverImage(
-            mixxx::FileAccess trackFileAccess);
 
     explicit SoundSourceProxy(
             TrackPointer pTrack,
@@ -140,6 +134,7 @@ class SoundSourceProxy {
     /// properly. The application log will contain warning messages for a detailed
     /// analysis in case unexpected behavior has been reported.
     bool updateTrackFromSource(
+            const mixxx::TaggingConfig& taggingConfig,
             UpdateTrackFromSourceMode updateTrackMetadataMode = UpdateTrackFromSourceMode::Default);
 
     /// Opening the audio source through the proxy will update the
@@ -167,7 +162,9 @@ class SoundSourceProxy {
 
     friend class TrackCollectionManager;
     static ExportTrackMetadataResult exportTrackMetadataBeforeSaving(
-            Track* pTrack, UserSettingsPointer pConfig);
+            const UserSettingsPointer& pConfig,
+            const mixxx::TaggingConfig& taggingConfig,
+            Track* pTrack);
 
     // Special case: Construction from a url is needed
     // for writing metadata immediately before the TIO is destroyed.

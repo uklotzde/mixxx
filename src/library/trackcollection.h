@@ -20,6 +20,11 @@
 // forward declaration(s)
 class BaseTrackCache;
 
+namespace mixxx {
+
+class TaggingConfig;
+}
+
 // Manages the internal database.
 class TrackCollection : public QObject,
     public virtual /*implements*/ SqlStorage {
@@ -79,12 +84,15 @@ class TrackCollection : public QObject,
     // This function returns a track ID of all file in the list not already visible,
     // it adds and unhides the tracks as well.
     QList<TrackId> resolveTrackIds(
+            const mixxx::TaggingConfig& taggingConfig,
             const QList<mixxx::FileInfo>& trackFiles,
             TrackDAO::ResolveTrackIdFlags flags);
     QList<TrackId> resolveTrackIdsFromUrls(
+            const mixxx::TaggingConfig& taggingConfig,
             const QList<QUrl>& urls,
             bool addMissing);
     QList<TrackId> resolveTrackIdsFromLocations(
+            const mixxx::TaggingConfig& taggingConfig,
             const QList<QString>& locations);
 
     bool insertCrate(const Crate& crate, CrateId* pCrateId = nullptr);
@@ -96,10 +104,12 @@ class TrackCollection : public QObject,
     bool updateAutoDjCrate(CrateId crateId, bool isAutoDjSource);
 
     TrackPointer getTrackById(
+            const mixxx::TaggingConfig& taggingConfig,
             TrackId trackId) const;
-
     TrackPointer getTrackByRef(
+            const mixxx::TaggingConfig& taggingConfig,
             const TrackRef& trackRef) const;
+
     TrackId getTrackIdByRef(
             const TrackRef& trackRef) const;
 
@@ -136,6 +146,7 @@ class TrackCollection : public QObject,
     }
 
     TrackPointer getOrAddTrack(
+            const mixxx::TaggingConfig& taggingConfig,
             const TrackRef& trackRef,
             bool* pAlreadyInLibrary = nullptr);
     FRIEND_TEST(DirectoryDAOTest, relocateDirectory);

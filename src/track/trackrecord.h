@@ -12,6 +12,7 @@
 #include "library/coverart.h"
 #include "util/color/rgbcolor.h"
 
+class Track;
 
 namespace mixxx {
 
@@ -47,7 +48,6 @@ class TrackRecord final {
     MIXXX_DECL_PROPERTY(PlayCounter, playCounter, PlayCounter)
     MIXXX_DECL_PROPERTY(RgbColor::optional_t, color, Color)
     MIXXX_DECL_PROPERTY(CuePosition, cuePoint, CuePoint)
-    MIXXX_DECL_PROPERTY(int, rating, Rating)
     MIXXX_DECL_PROPERTY(bool, bpmLocked, BpmLocked)
 
   public:
@@ -73,8 +73,24 @@ class TrackRecord final {
     static bool isValidRating(int rating) {
         return rating >= kMinRating && rating <= kMaxRating;
     }
+
+    static int getRatingFromCustomTags(
+            const CustomTags& customTags);
+    static bool updateRatingIntoCustomTags(
+            CustomTags* pCustomTags,
+            int rating);
+
     bool hasRating() const {
         return getRating() != kNoRating;
+    }
+    int getRating() const {
+        return getRatingFromCustomTags(
+                getMetadata().getCustomTags());
+    }
+    bool updateRating(int rating) {
+        return updateRatingIntoCustomTags(
+                refMetadata().ptrCustomTags(),
+                rating);
     }
 
     void setKeys(const Keys& keys);
@@ -104,8 +120,10 @@ class TrackRecord final {
             track::io::key::Source keySource);
 
     bool replaceMetadataFromSource(
+            const TaggingConfig& taggingConfig,
             TrackMetadata&& importedMetadata,
             const QDateTime& metadataSynchronized);
+
     // Merge the current metadata with new and additional properties
     // imported from the file. Since these properties are not (yet)
     // stored in the library or have been added later all existing
@@ -115,6 +133,7 @@ class TrackRecord final {
     //
     // Returns true if any property has been modified or false otherwise.
     bool mergeExtraMetadataFromSource(
+            const TaggingConfig& taggingConfig,
             const TrackMetadata& importedMetadata);
 
     /// Update the stream info after opening the audio stream during
@@ -134,7 +153,14 @@ class TrackRecord final {
         return m_streamInfoFromSource;
     }
 
-private:
+  private:
+    // TODO: Remove this dependency
+    friend class ::Track;
+    bool synchronizeTextFieldsWithCustomTags(
+            const TaggingConfig& config) {
+        return refMetadata().synchronizeTextFieldsWithCustomTags(config);
+    }
+
     Keys m_keys;
 
     // TODO: Use TrackMetadata as single source of truth and do not

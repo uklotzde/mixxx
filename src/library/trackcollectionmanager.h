@@ -7,6 +7,7 @@
 
 #include "library/relocatedtrack.h"
 #include "preferences/usersettings.h"
+#include "tagging/taggingcontext.h"
 #include "track/globaltrackcache.h"
 #include "util/db/dbconnectionpool.h"
 #include "util/fileinfo.h"
@@ -37,7 +38,7 @@ class TrackCollectionManager: public QObject,
             deleteTrackFn_t deleteTrackForTestingFn = nullptr);
     ~TrackCollectionManager() override;
 
-    TrackCollection* internalCollection() {
+    TrackCollection* internalCollection() const {
         DEBUG_ASSERT_QOBJECT_THREAD_AFFINITY(this);
         return m_pInternalCollection;
     }
@@ -46,6 +47,35 @@ class TrackCollectionManager: public QObject,
         DEBUG_ASSERT_QOBJECT_THREAD_AFFINITY(this);
         return m_externalCollections;
     }
+
+    TrackPointer getTrackById(
+            TrackId trackId) const;
+    TrackPointer getTrackByRef(
+            const TrackRef& trackRef) const;
+    QList<TrackId> resolveTrackIdsFromUrls(
+            const QList<QUrl>& urls,
+            bool addMissing) const;
+    QList<TrackId> resolveTrackIdsFromLocations(
+            const QList<QString>& locations) const;
+
+    mixxx::TaggingContext& refTaggingContext() {
+        return m_taggingContext;
+    }
+    const mixxx::TaggingContext& taggingContext() const {
+        return m_taggingContext;
+    }
+    const mixxx::TaggingConfig& taggingConfig() const {
+        return taggingContext().getConfig();
+    }
+
+    bool updateTrackGenreText(
+            Track* pTrack,
+            const mixxx::TagLabel::value_t& genreText) const;
+#if defined(__EXTRA_METADATA__)
+    bool updateTrackMoodText(
+            Track* pTrack,
+            const mixxx::TagLabel::value_t& moodText) const;
+#endif // __EXTRA_METADATA__
 
     bool hideTracks(const QList<TrackId>& trackIds) const;
     bool unhideTracks(const QList<TrackId>& trackIds) const;
@@ -67,7 +97,7 @@ class TrackCollectionManager: public QObject,
     // cache to prevent file corruption due to concurrent access.
     // Returns true if the track was dirty and has been saved, otherwise
     // false.
-    bool saveTrack(const TrackPointer& pTrack);
+    bool saveTrack(const TrackPointer& pTrack) const;
 
   signals:
     void libraryScanStarted();
@@ -92,7 +122,7 @@ class TrackCollectionManager: public QObject,
     };
     void saveTrack(
             Track* pTrack,
-            TrackMetadataExportMode mode);
+            TrackMetadataExportMode mode) const;
     void exportTrackMetadata(
             Track* pTrack,
             TrackMetadataExportMode mode) const;
@@ -102,6 +132,8 @@ class TrackCollectionManager: public QObject,
     const parented_ptr<TrackCollection> m_pInternalCollection;
 
     QList<ExternalTrackCollection*> m_externalCollections;
+
+    mixxx::TaggingContext m_taggingContext;
 
     // TODO: Extract and decouple LibraryScanner from TrackCollectionManager
     std::unique_ptr<LibraryScanner> m_pScanner;

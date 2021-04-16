@@ -30,8 +30,6 @@ class Track : public QObject {
     // testing purposes. The resulting track will neither be stored
     // in the database nor will the metadata of the corresponding file
     // be updated.
-    // Use SoundSourceProxy::importTemporaryTrack() for importing files
-    // to ensure that the file will not be written while reading it!
     static TrackPointer newTemporary(
             mixxx::FileAccess fileAccess = mixxx::FileAccess());
     static TrackPointer newTemporary(
@@ -53,7 +51,10 @@ class Track : public QObject {
     Q_PROPERTY(QString title READ getTitle WRITE setTitle)
     Q_PROPERTY(QString album READ getAlbum WRITE setAlbum)
     Q_PROPERTY(QString albumArtist READ getAlbumArtist WRITE setAlbumArtist)
-    Q_PROPERTY(QString genre READ getGenre WRITE setGenre)
+    Q_PROPERTY(QString genreText READ getGenreText STORED false)
+#if defined(__EXTRA_METADATA__)
+    Q_PROPERTY(QString moodText READ getMoodText STORED false)
+#endif // __EXTRA_METADATA__
     Q_PROPERTY(QString composer READ getComposer WRITE setComposer)
     Q_PROPERTY(QString grouping READ getGrouping WRITE setGrouping)
     Q_PROPERTY(QString year READ getYear WRITE setYear)
@@ -177,10 +178,6 @@ class Track : public QObject {
     QString getYear() const;
     // Set year
     void setYear(const QString&);
-    // Return genre
-    QString getGenre() const;
-    // Set genre
-    void setGenre(const QString&);
     // Returns the track color
     mixxx::RgbColor::optional_t getColor() const;
     // Sets the track color
@@ -203,6 +200,81 @@ class Track : public QObject {
     // Set track number/total
     void setTrackNumber(const QString&);
     void setTrackTotal(const QString&);
+
+    /// Return the genre as text
+    mixxx::TagLabel::value_t getGenreText() const;
+    /// !!!DO NOT USE!!!
+    /// Set the genre text WITHOUT updating the corresponding custom tags.
+    ///
+    /// Only allowed to be used by TrackDAO!!! Unfortunately, the
+    /// design of TrackDAO does not allow to hide this method by
+    /// making it private.
+    void setGenreTextInternal(
+            const mixxx::TagLabel::value_t& genreText);
+    /// Set the genre text and update the corresponding custom tags
+    /// by splitting the text according to the given tag mapping
+    /// configuration.
+    ///
+    /// Returns true if track metadata has been updated and false
+    /// otherwise.
+    bool updateGenreText(
+            const mixxx::TaggingConfig& config,
+            const mixxx::TagLabel::value_t& genreText);
+
+#if defined(__EXTRA_METADATA__)
+    /// Return the mood as text
+    mixxx::TagLabel::value_t getMoodText() const;
+    /// !!!DO NOT USE!!!
+    /// Set the mood text WITHOUT updating the corresponding custom tags.
+    ///
+    /// Only allowed to be used by TrackDAO!!! Unfortunately, the
+    /// design of TrackDAO does not allow to hide this method by
+    /// making it private.
+    void setMoodTextInternal(
+            const mixxx::TagLabel::value_t& moodText);
+    /// Set the mood text and update the corresponding custom tags
+    /// by splitting the text according to the given tag mapping
+    /// configuration.
+    ///
+    /// Returns true if track metadata has been updated and false
+    /// otherwise.
+    bool updateMoodText(
+            const mixxx::TaggingConfig& config,
+            const mixxx::TagLabel::value_t& moodText);
+#endif // __EXTRA_METADATA__
+
+    mixxx::CustomTags getCustomTags() const;
+
+    /// Set the custom tags and update all dependent text fields
+    /// accordingly.
+    ///
+    /// Returns true if track metadata has been updated and false
+    /// otherwise.
+    bool updateCustomTags(
+            const mixxx::TaggingConfig& config,
+            const mixxx::CustomTags& customTags);
+
+    /// Merge and replace incoming over existing custom tags and
+    /// update all dependent text fields accordingly.
+    ///
+    /// Returns true if track metadata has been updated and false
+    /// otherwise.
+    bool mergeReplaceCustomTags(
+            const mixxx::TaggingConfig& config,
+            const mixxx::CustomTags& customTags);
+
+    bool replaceCustomTag(
+            const mixxx::TaggingConfig& config,
+            const mixxx::Tag& tag,
+            const mixxx::TagFacet& facet = mixxx::TagFacet());
+    bool appendCustomTag(
+            const mixxx::TaggingConfig& config,
+            const mixxx::TagLabel& newLabel,
+            const mixxx::TagFacet& facet);
+    bool removeCustomTag(
+            const mixxx::TaggingConfig& config,
+            const mixxx::TagLabel& label,
+            const mixxx::TagFacet& facet = mixxx::TagFacet());
 
     PlayCounter getPlayCounter() const;
     void setPlayCounter(const PlayCounter& playCounter);
@@ -332,6 +404,7 @@ class Track : public QObject {
             const QImage& loadedImage = QImage());
 
     void replaceMetadataFromSource(
+            const mixxx::TaggingConfig& taggingConfig,
             mixxx::TrackMetadata&& importedMetadata,
             const QDateTime& metadataSynchronized);
 
@@ -448,10 +521,17 @@ class Track : public QObject {
     // Merge additional metadata that is not (yet) stored in the database
     // and only available from file tags.
     bool mergeExtraMetadataFromSource(
+            const mixxx::TaggingConfig& taggingConfig,
             const mixxx::TrackMetadata& importedMetadata);
+
+    // TODO: Remove this dependency after populating TrackRecord
+    // instead of the Track object from the database
+    bool synchronizeTextFieldsWithCustomTags(
+            const mixxx::TaggingConfig& config);
 
     ExportTrackMetadataResult exportMetadata(
             const UserSettingsPointer& pConfig,
+            const mixxx::TaggingConfig& taggingConfig,
             const mixxx::MetadataSource& metadataSource);
 
     // Information about the actual properties of the
@@ -465,6 +545,9 @@ class Track : public QObject {
     }
     void updateStreamInfoFromSource(
             mixxx::audio::StreamInfo&& streamInfo);
+
+    void setCustomTagsInternal(
+            mixxx::CustomTags&& customTags);
 
     // Mutex protecting access to object
     mutable QMutex m_qMutex;
