@@ -71,6 +71,7 @@ class Track : public QObject {
     Q_PROPERTY(QString durationFormattedMilliseconds READ getDurationTextMilliseconds STORED false)
     Q_PROPERTY(QString info READ getInfo STORED false)
     Q_PROPERTY(QString titleInfo READ getTitleInfo STORED false)
+    Q_PROPERTY(QDateTime sourceSynchronizedAt READ getSourceSynchronizedAt STORED false)
 
     mixxx::FileAccess getFileAccess() const {
         // Copying QFileInfo is thread-safe due to implicit sharing,
@@ -150,9 +151,18 @@ class Track : public QObject {
     mixxx::ReplayGain getReplayGain() const;
 
     // Indicates if the metadata has been parsed from file tags.
-    bool isMetadataSynchronized() const;
-    // Only used by a free function in TrackDAO!
-    void setMetadataSynchronized(bool metadataSynchronized);
+    bool isSourceSynchronized() const;
+
+    void setHeaderParsedFromTrackDAO(bool headerParsed) {
+        // Always operating on a newly created, exclusive instance! No need
+        // to lock the mutex.
+        DEBUG_ASSERT(!m_record.m_headerParsed);
+        m_record.m_headerParsed = headerParsed;
+    }
+
+    // The date/time of the last import or export of metadata
+    void setSourceSynchronizedAt(const QDateTime& sourceSynchronizedAt);
+    QDateTime getSourceSynchronizedAt() const;
 
     void setDateAdded(const QDateTime& dateAdded);
     QDateTime getDateAdded() const;
@@ -406,10 +416,10 @@ class Track : public QObject {
     void replaceMetadataFromSource(
             const mixxx::TaggingConfig& taggingConfig,
             mixxx::TrackMetadata&& importedMetadata,
-            const QDateTime& metadataSynchronized);
+            const QDateTime& sourceSynchronizedAt);
 
     mixxx::TrackMetadata getMetadata(
-            bool* pMetadataSynchronized = nullptr) const;
+            bool* pHeaderParsed = nullptr) const;
 
     mixxx::TrackRecord getRecord(
             bool* pDirty = nullptr) const;
