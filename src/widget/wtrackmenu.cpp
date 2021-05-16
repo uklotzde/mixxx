@@ -2,7 +2,9 @@
 
 #include <QCheckBox>
 #include <QInputDialog>
+#include <QMessageBox>
 #include <QModelIndex>
+#include <QProcess>
 
 #include "control/controlobject.h"
 #include "control/controlproxy.h"
@@ -30,6 +32,7 @@
 #include "util/desktophelper.h"
 #include "util/parented_ptr.h"
 #include "util/qt.h"
+#include "util/widgethelper.h"
 #include "widget/wcolorpickeraction.h"
 #include "widget/wcoverartlabel.h"
 #include "widget/wcoverartmenu.h"
@@ -500,6 +503,13 @@ void WTrackMenu::createActions() {
                 this,
                 &WTrackMenu::slotColorPicked);
     }
+
+    m_pDisplayMediaInfoAction =
+            new QAction(tr("Display media info..."), this);
+    connect(m_pDisplayMediaInfoAction,
+            &QAction::triggered,
+            this,
+            &WTrackMenu::slotDisplayMediaInfo);
 }
 
 void WTrackMenu::setupActions() {
@@ -651,6 +661,8 @@ void WTrackMenu::setupActions() {
         addSeparator();
         addAction(m_pPropertiesAct);
     }
+
+    addAction(m_pDisplayMediaInfoAction);
 }
 
 bool WTrackMenu::isAnyTrackBpmLocked() const {
@@ -1903,6 +1915,112 @@ void WTrackMenu::slotPurge() {
         return;
     }
     m_pTrackModel->purgeTracks(getTrackIndices());
+}
+
+namespace {
+
+// Ugly hack for a resizable message box
+// https://www.qtcentre.org/threads/24888-Resizing-a-QMessageBox?p=251312#post251312
+class ResizableMessageBox : public QMessageBox {
+  public:
+    ResizableMessageBox(
+            QMessageBox::Icon icon,
+            const QString& title,
+            const QString& text,
+            QMessageBox::StandardButtons buttons)
+            : QMessageBox(icon, title, text, buttons) {
+        setMouseTracking(true);
+        setSizeGripEnabled(true);
+        auto* const pScreen = mixxx::widgethelper::getScreen(*this);
+        setMinimumSize(pScreen->size().width() / 2, pScreen->size().height() / 2);
+    }
+
+  private:
+    bool event(QEvent* e) override {
+        const auto res = QMessageBox::event(e);
+        switch (e->type()) {
+        case QEvent::MouseMove:
+        case QEvent::MouseButtonPress:
+            setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+            if (QWidget* textEdit = findChild<QTextEdit*>()) {
+                textEdit->setMaximumHeight(QWIDGETSIZE_MAX);
+            }
+            break;
+        default: {
+            // ignore
+        }
+        }
+        return res;
+    }
+};
+
+} // namespace
+
+void WTrackMenu::slotDisplayMediaInfo() {
+    if (!m_pTrackModel) {
+        return;
+    }
+    QStringList mediaInfoArgs;
+    const int extraArgsCount = 0;
+    {
+        const auto trackRefs = getTrackRefs();
+        mediaInfoArgs.reserve(extraArgsCount + trackRefs.size());
+        //mediaInfoArgs.append(QStringLiteral("--Full"));
+        //mediaInfoArgs.append(QStringLiteral("--Output=HTML"));
+        DEBUG_ASSERT(mediaInfoArgs.size() == extraArgsCount);
+        const auto selectedTrackRefs = getTrackRefs();
+        for (const auto& trackRef : selectedTrackRefs) {
+            VERIFY_OR_DEBUG_ASSERT(trackRef.hasLocation()) {
+                continue;
+            }
+            mediaInfoArgs.append(trackRef.getLocation());
+        }
+    }
+    if (mediaInfoArgs.size() <= extraArgsCount) {
+        return;
+    }
+    const int numTracks = mediaInfoArgs.size() - extraArgsCount;
+    QString mediaInfoOutput;
+    {
+        QProcess execMediaInfo;
+        qDebug() << "Fetching media info of" << numTracks << "track(s)";
+        execMediaInfo.start(
+                QStringLiteral("mediainfo"),
+                mediaInfoArgs,
+                QIODevice::ReadOnly);
+        if (!execMediaInfo.waitForStarted()) {
+            QMessageBox(
+                    QMessageBox::Warning,
+                    tr("Media Info"),
+                    tr("Failed to start fetching media info"),
+                    QMessageBox::Close)
+                    .exec();
+            return;
+        }
+        if (!execMediaInfo.waitForFinished()) {
+            QMessageBox(
+                    QMessageBox::Warning,
+                    tr("Media Info"),
+                    tr("Failed to finish fetching media info"),
+                    QMessageBox::Close)
+                    .exec();
+            return;
+        }
+        mediaInfoOutput = QString::fromLocal8Bit(
+                execMediaInfo.readAllStandardOutput());
+    }
+    if (mediaInfoOutput.isEmpty()) {
+        return;
+    }
+    auto msgbox = ResizableMessageBox(
+            QMessageBox::Information,
+            tr("Media Info"),
+            tr("Media info of %n track(s).", "", numTracks),
+            QMessageBox::Close);
+    msgbox.setTextFormat(Qt::PlainText);
+    msgbox.setDetailedText(mediaInfoOutput);
+    msgbox.setTextInteractionFlags(Qt::TextBrowserInteraction);
+    msgbox.exec();
 }
 
 void WTrackMenu::clearTrackSelection() {

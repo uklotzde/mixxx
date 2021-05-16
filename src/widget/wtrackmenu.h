@@ -138,6 +138,8 @@ class WTrackMenu : public QMenu {
     void slotUnhide();
     void slotPurge();
 
+    void slotDisplayMediaInfo();
+
   private:
     // This getter verifies that m_pTrackModel is set when
     // invoked.
@@ -275,6 +277,8 @@ class WTrackMenu : public QMenu {
     QAction* m_pClearKeyAction{};
     QAction* m_pClearReplayGainAction{};
     QAction* m_pClearAllMetadataAction{};
+
+    QAction* m_pDisplayMediaInfoAction{};
 
     const UserSettingsPointer m_pConfig;
     Library* const m_pLibrary;
