@@ -20,6 +20,7 @@
 #include "library/trackset/crate/cratestorage.h"
 #include "moc_trackdao.cpp"
 #include "sources/soundsourceproxy.h"
+#include "tagging/customtagsdb.h"
 #include "track/beatfactory.h"
 #include "track/beats.h"
 #include "track/globaltrackcache.h"
@@ -101,6 +102,15 @@ TrackDAO::~TrackDAO() {
     addTracksFinish(true);
 }
 
+void TrackDAO::initialize(const QSqlDatabase& database) {
+    DAO::initialize(database);
+
+    mixxx::TrackCustomTagsStorage::cleanup(m_database);
+    // TODO: Make m_pCustomTags a parented child of this
+    //m_pCustomTags = make_parented<mixxx::TrackCustomTagsStorage>(m_database, this);
+    m_pCustomTags = std::make_unique<mixxx::TrackCustomTagsStorage>(m_database);
+}
+
 void TrackDAO::finish() {
     qDebug() << "TrackDAO::finish()";
 
@@ -156,6 +166,7 @@ TrackId TrackDAO::getTrackIdByLocation(const QString& location) const {
 }
 
 QList<TrackId> TrackDAO::resolveTrackIds(
+        const mixxx::TaggingConfig& taggingConfig,
         const QList<mixxx::FileInfo>& fileInfos,
         ResolveTrackIdFlags flags) {
     QList<TrackId> trackIds;
@@ -200,7 +211,7 @@ QList<TrackId> TrackDAO::resolveTrackIds(
         const int locationColumn = query.record().indexOf("location");
         while (query.next()) {
             QString location = query.value(locationColumn).toString();
-            addTracksAddFile(location, true);
+            addTracksAddFile(taggingConfig, location, true);
         }
 
         // Finish adding tracks to the database.
@@ -777,6 +788,9 @@ TrackId TrackDAO::addTracksAddTrack(const TrackPointer& pTrack, bool unremove) {
         pTrack->initId(trackId);
         pTrack->setDateAdded(trackDateAdded);
 
+        m_pCustomTags->insertSingleTrack(
+                trackId,
+                trackRecord.getMetadata().getCustomTags());
         m_analysisDao.saveTrackAnalyses(
                 trackId,
                 pTrack->getWaveform(),
@@ -793,6 +807,7 @@ TrackId TrackDAO::addTracksAddTrack(const TrackPointer& pTrack, bool unremove) {
 }
 
 TrackPointer TrackDAO::addTracksAddFile(
+        const mixxx::TaggingConfig& taggingConfig,
         const mixxx::FileAccess& fileAccess,
         bool unremove) {
     // Check that track is a supported extension.
@@ -842,7 +857,7 @@ TrackPointer TrackDAO::addTracksAddFile(
 
     // Initially (re-)import the metadata for the newly created track
     // from the file.
-    SoundSourceProxy(pTrack).updateTrackFromSource();
+    SoundSourceProxy(pTrack).updateTrackFromSource(taggingConfig);
     if (!pTrack->isSourceSynchronized()) {
         qWarning() << "TrackDAO::addTracksAddFile:"
                 << "Failed to parse track metadata from file"
@@ -970,13 +985,12 @@ bool TrackDAO::onPurgingTracks(
         return true; // nothing to do
     }
 
-    QStringList idList;
-    idList.reserve(trackIds.size());
     for (const auto& trackId : trackIds) {
         GlobalTrackCacheLocker().purgeTrackId(trackId);
-        idList.append(trackId.toString());
     }
-    QString idListJoined = idList.join(",");
+
+    const QString idListJoined =
+            mixxx::TrackCustomTagsStorage::joinTrackIdList(trackIds);
 
     QStringList locations;
     QSet<QString> directories;
@@ -1001,6 +1015,9 @@ bool TrackDAO::onPurgingTracks(
         if (locations.empty()) {
             return false;
         }
+    }
+    if (!m_pCustomTags->deleteMultipleTracks(idListJoined)) {
+        return false;
     }
     {
         // Remove location from track_locations table
@@ -1321,7 +1338,9 @@ struct ColumnPopulator {
 
 #define ARRAYLENGTH(x) (sizeof(x) / sizeof(*x))
 
-TrackPointer TrackDAO::getTrackById(TrackId trackId) const {
+TrackPointer TrackDAO::getTrackById(
+        const mixxx::TaggingConfig& taggingConfig,
+        TrackId trackId) const {
     if (!trackId.isValid()) {
         return TrackPointer();
     }
@@ -1490,12 +1509,18 @@ TrackPointer TrackDAO::getTrackById(TrackId trackId) const {
         }
     }
 
+    auto customTags = m_pCustomTags->loadSingleTrack(trackId);
+    if (customTags) {
+        pTrack->setCustomTagsInternal(std::move(*customTags));
+    }
+
     // Populate track cues from the cues table.
     pTrack->setCuePoints(m_cueDao.getCuesForTrack(trackId));
 
     // Normally we will set the track as clean but sometimes when loading from
     // the database we need to perform upkeep that ought to be written back to
     // the database when the track is deleted.
+    bool customTagsSynchronized = false;
     if (shouldDirty) {
         pTrack->markDirty();
     } else {
@@ -1504,13 +1529,18 @@ TrackPointer TrackDAO::getTrackById(TrackId trackId) const {
         // file. This import might have never been completed successfully
         // before, so just check and try for every track that has been
         // freshly loaded from the database.
-        SoundSourceProxy(pTrack).updateTrackFromSource();
+        SoundSourceProxy(pTrack).updateTrackFromSource(taggingConfig);
         if (kLogger.debugEnabled() && pTrack->isDirty()) {
             kLogger.debug()
                     << "Updated track metadata from file tags:"
                     << pTrack->getFileInfo().lastModified()
                     << pTrack->getMetadata();
         }
+    }
+
+    // Keep text fields synchronized with custom tags
+    if (!customTagsSynchronized) {
+        pTrack->synchronizeTextFieldsWithCustomTags(taggingConfig);
     }
 
     // Validate and refresh cover image hash values if needed.
@@ -1567,6 +1597,7 @@ TrackId TrackDAO::getTrackIdByRef(
 }
 
 TrackPointer TrackDAO::getTrackByRef(
+        const mixxx::TaggingConfig& taggingConfig,
         const TrackRef& trackRef) const {
     if (!trackRef.isValid()) {
         return TrackPointer();
@@ -1586,7 +1617,7 @@ TrackPointer TrackDAO::getTrackByRef(
         qWarning() << "Track not found:" << trackRef;
         return TrackPointer();
     }
-    return getTrackById(trackId);
+    return getTrackById(taggingConfig, trackId);
 }
 
 // Saves a track's info back to the database
@@ -1674,6 +1705,9 @@ bool TrackDAO::updateTrack(Track* pTrack) const {
 
     //qDebug() << "Update track took : " << time.elapsed().formatMillisWithUnit() << "Now updating cues";
     //time.start();
+    m_pCustomTags->replaceSingleTrack(
+            trackId,
+            trackRecord.getMetadata().getCustomTags());
     m_analysisDao.saveTrackAnalyses(
             trackId,
             pTrack->getWaveform(),
@@ -1922,6 +1956,9 @@ bool TrackDAO::detectMovedTracks(
                 continue;
             }
         }
+        // TODO (foreign key constraints): Delete custom tags before deleting
+        // the referenced track.
+        m_pCustomTags->deleteSingleTrack(relocatedTrack.deletedTrackId());
 
         // Update the location foreign key for the existing row in the
         // library table to point to the correct row in the track_locations
@@ -2159,6 +2196,7 @@ void TrackDAO::detectCoverArtForTracksWithoutCover(volatile const bool* pCancel,
 }
 
 TrackPointer TrackDAO::getOrAddTrack(
+        const mixxx::TaggingConfig& taggingConfig,
         const TrackRef& trackRef,
         bool* pAlreadyInLibrary) {
     if (!trackRef.isValid()) {
@@ -2167,7 +2205,7 @@ TrackPointer TrackDAO::getOrAddTrack(
 
     const TrackId trackId = getTrackIdByRef(trackRef);
     if (trackId.isValid()) {
-        const auto pTrack = getTrackById(trackId);
+        const auto pTrack = getTrackById(taggingConfig, trackId);
         if (pTrack) {
             DEBUG_ASSERT(pTrack->getDateAdded().isValid());
             if (pAlreadyInLibrary) {
@@ -2185,7 +2223,10 @@ TrackPointer TrackDAO::getOrAddTrack(
 
     DEBUG_ASSERT(trackRef.hasLocation());
     addTracksPrepare();
-    const auto pTrack = addTracksAddFile(trackRef.getLocation(), true);
+    const auto pTrack = addTracksAddFile(
+            taggingConfig,
+            trackRef.getLocation(),
+            true);
     addTracksFinish(!pTrack);
     if (!pTrack) {
         qWarning()
