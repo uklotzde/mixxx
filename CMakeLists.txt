@@ -1448,7 +1448,6 @@ add_library(
   src/util/logger.cpp
   src/util/logging.cpp
   src/util/mac.cpp
-  src/util/moc_included_test.cpp
   src/util/movinginterquartilemean.cpp
   src/util/rangelist.cpp
   src/util/readaheadsamplebuffer.cpp
@@ -2511,7 +2510,6 @@ add_executable(
   src/test/wpushbutton_test.cpp
   src/test/wwidgetstack_test.cpp
   src/test/waveform_upgrade_test.cpp
-  src/util/moc_included_test.cpp
   src/test/helpers/log_test.cpp
 )
 if(QML)
