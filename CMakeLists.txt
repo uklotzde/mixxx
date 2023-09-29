@@ -1495,7 +1495,6 @@ add_library(
   src/util/logger.cpp
   src/util/logging.cpp
   src/util/mac.cpp
-  src/util/moc_included_test.cpp
   src/util/movinginterquartilemean.cpp
   src/util/rangelist.cpp
   src/util/readaheadsamplebuffer.cpp
@@ -1871,10 +1870,10 @@ else()
   )
 endif()
 
-set_source_files_properties(
-  src/util/moc_included_test.cpp
-  PROPERTIES SKIP_PRECOMPILE_HEADERS ON
-)
+#set_source_files_properties(
+#  src/util/moc_included_test.cpp
+#  PROPERTIES SKIP_PRECOMPILE_HEADERS ON
+#)
 
 set_target_properties(
   mixxx-lib
@@ -2600,7 +2599,7 @@ if(BUILD_TESTING)
     src/test/wbatterytest.cpp
     src/test/wpushbutton_test.cpp
     src/test/wwidgetstack_test.cpp
-    src/util/moc_included_test.cpp
+    #src/util/moc_included_test.cpp
     src/test/helpers/log_test.cpp
   )
   if(BUILD_BENCH)
