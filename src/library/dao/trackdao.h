@@ -10,6 +10,7 @@
 #include "library/relocatedtrack.h"
 #include "preferences/usersettings.h"
 #include "track/globaltrackcache.h"
+#include "track/playcounter.h"
 #include "util/class.h"
 
 class SqlTransaction;
@@ -23,6 +24,12 @@ class FileInfo;
 class TrackRecord;
 
 } // namespace mixxx
+
+struct RecentlyPlayedTrack {
+    TrackId id;
+    QString location;
+    PlayCounter playCounter;
+};
 
 class TrackDAO : public QObject, public virtual DAO, public virtual GlobalTrackCacheRelocator {
     Q_OBJECT
@@ -109,6 +116,8 @@ class TrackDAO : public QObject, public virtual DAO, public virtual GlobalTrackC
     TrackPointer getTrackByUrl(const QUrl& url) const {
         return getTrackByRef(TrackRef::fromUrl(url));
     }
+
+    QVector<RecentlyPlayedTrack> findRecentlyPlayedTracks(const QDateTime& sinceLastPlayedAt) const;
 
   signals:
     // Forwarded from Track object

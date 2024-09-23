@@ -2551,3 +2551,44 @@ void TrackDAO::setTrackHeaderParsedInternal(Track* pTrack, bool headerParsed) {
 bool TrackDAO::getTrackHeaderParsedInternal(const mixxx::TrackRecord& trackRecord) {
     return trackRecord.m_headerParsed;
 }
+
+QVector<RecentlyPlayedTrack> TrackDAO::findRecentlyPlayedTracks(const QDateTime& sinceLastPlayedAt) const {
+    auto query = FwdSqlQuery(
+            m_database,
+            QStringLiteral(
+                    "SELECT library.id as id,track_locations.location as location,timesplayed,last_played_at,played FROM library "
+                    "JOIN track_locations ON track_locations.id=library.location "
+                    "WHERE last_played_at>=:last_played_at"));
+    query.bindValue(
+            QStringLiteral(":last_played_at"),
+            mixxx::sqlite::writeGeneratedTimestamp(sinceLastPlayedAt));
+    VERIFY_OR_DEBUG_ASSERT(!query.hasError()) {
+        return {};
+    }
+    VERIFY_OR_DEBUG_ASSERT(query.execPrepared()) {
+        return {};
+    }
+    QVector<RecentlyPlayedTrack> recentlyPlayedTracks;
+    if (query.numRowsAffected() > 0) {
+        recentlyPlayedTracks.reserve(query.numRowsAffected());
+    }
+    const int idIndex = query.fieldIndex(QStringLiteral("id"));
+    const int locationIndex = query.fieldIndex(QStringLiteral("location"));
+    const int timesPlayedIndex = query.fieldIndex(QStringLiteral("timesplayed"));
+    const int lastPlayedAtIndex = query.fieldIndex(QStringLiteral("last_played_at"));
+    const int playedIndex = query.fieldIndex(QStringLiteral("played"));
+    while (query.next()) {
+        const auto id = TrackId(query.fieldValue(idIndex));
+        DEBUG_ASSERT(id.isValid());
+        const auto location = query.fieldValue(locationIndex).toString();
+        const auto timesPlayed = query.fieldValue(timesPlayedIndex).toInt();
+        DEBUG_ASSERT(timesPlayed >= 0);
+        const auto lastPlayedAt = mixxx::sqlite::readGeneratedTimestamp(query.fieldValue(lastPlayedAtIndex));
+        const auto played = query.fieldValue(playedIndex).toBool();
+        auto playCounter = PlayCounter(timesPlayed);
+        playCounter.setLastPlayedAt(lastPlayedAt);
+        playCounter.setPlayedFlag(played);
+        recentlyPlayedTracks.push_back(RecentlyPlayedTrack{id, location, playCounter});
+    }
+    return recentlyPlayedTracks;
+}
