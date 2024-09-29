@@ -1598,6 +1598,10 @@ add_library(
   src/track/keyfactory.cpp
   src/track/keys.cpp
   src/track/keyutils.cpp
+  src/library/tags/facets.cpp
+  src/library/tags/facetid.cpp
+  src/library/tags/label.cpp
+  src/library/tags/tag.cpp
   src/track/playcounter.cpp
   src/track/replaygain.cpp
   src/track/serato/beatgrid.cpp
@@ -1653,6 +1657,7 @@ add_library(
   src/util/imagefiledata.cpp
   src/util/imageutils.cpp
   src/util/indexrange.cpp
+  src/util/json.cpp
   src/util/logger.cpp
   src/util/logging.cpp
   src/util/mac.cpp
@@ -2881,6 +2886,7 @@ if(BUILD_TESTING)
     src/test/enginemixertest.cpp
     src/test/enginemicrophonetest.cpp
     src/test/enginesynctest.cpp
+    src/test/facets_test.cpp
     src/test/fileinfo_test.cpp
     src/test/frametest.cpp
     src/test/globaltrackcache_test.cpp
@@ -2894,6 +2900,7 @@ if(BUILD_TESTING)
     src/test/lcstest.cpp
     src/test/learningutilstest.cpp
     src/test/libraryscannertest.cpp
+    src/test/librarytags_test.cpp
     src/test/librarytest.cpp
     src/test/looping_control_test.cpp
     src/test/main.cpp
