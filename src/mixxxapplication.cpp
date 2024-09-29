@@ -9,6 +9,8 @@
 #include "audio/types.h"
 #include "control/controlproxy.h"
 #include "library/relocatedtrack.h"
+#include "library/tags/facetid.h"
+#include "library/tags/tag.h"
 #include "library/trackset/crate/crateid.h"
 #include "moc_mixxxapplication.cpp"
 #include "soundio/soundmanagerutil.h"
@@ -140,6 +142,14 @@ void MixxxApplication::registerMetaTypes() {
     // Library Scanner
     qRegisterMetaType<RelocatedTrack>();
     qRegisterMetaType<QList<RelocatedTrack>>();
+
+    // Library: Tags
+    qRegisterMetaType<mixxx::library::tags::FacetId>("mixxx::library::tags::FacetId");
+    qRegisterMetaType<mixxx::library::tags::Label>("mixxx::library::tags::Label");
+    qRegisterMetaType<mixxx::library::tags::LabelVector>("mixxx::library::tags::LabelVector");
+    qRegisterMetaType<mixxx::library::tags::Score>("mixxx::library::tags::Score");
+    qRegisterMetaType<mixxx::library::tags::Tag>("mixxx::library::tags::Tag");
+    qRegisterMetaType<mixxx::library::tags::TagVector>("mixxx::library::tags::TagVector");
 
     // Various custom data types
     qRegisterMetaType<mixxx::ReplayGain>("mixxx::ReplayGain");
