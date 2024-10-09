@@ -5445,3 +5445,42 @@ if(APPLE AND MACOS_BUNDLE)
   )
   install(SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/BundleInstall.cmake")
 endif()
+
+#
+# aoide
+#
+option(AOIDE "aoide - External music library (experimental)" OFF)
+if(AOIDE)
+  target_compile_definitions(mixxx-lib PUBLIC __AOIDE__)
+  target_compile_definitions(mixxx-lib PUBLIC __EXTRA_METADATA__)
+  target_compile_definitions(mixxx-lib PUBLIC __CUSTOM_TAGS__)
+  target_sources(
+    mixxx-lib
+    PRIVATE
+      src/aoide/activecollectionagent.cpp
+      src/aoide/collectionlistmodel.cpp
+      src/aoide/gateway.cpp
+      src/aoide/json/collection.cpp
+      src/aoide/json/entity.cpp
+      src/aoide/json/json.cpp
+      src/aoide/json/marker.cpp
+      src/aoide/json/playlist.cpp
+      src/aoide/json/tag.cpp
+      src/aoide/json/track.cpp
+      src/aoide/libraryfeature.cpp
+      src/aoide/sessioncache.cpp
+      src/aoide/settings.cpp
+      src/aoide/subsystem.cpp
+      src/aoide/trackcollection.cpp
+      src/aoide/tracksearchlistmodel.cpp
+      src/aoide/tracksearchoverlayfilterdlg.cpp
+      src/aoide/tracksearchoverlayfilterdlg.ui
+      src/aoide/tracktablemodel.cpp
+      src/aoide/util.cpp
+      src/aoide/web/listplayliststask.cpp
+      src/aoide/web/listcollectionstask.cpp
+      src/aoide/web/searchtrackstask.cpp
+      src/aoide/web/exporttrackfilestask.cpp
+      src/aoide/web/shutdowntask.cpp
+  )
+endif()
