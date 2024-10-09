@@ -1356,6 +1356,9 @@ TrackPointer WTrackMenu::getFirstTrackPointer() const {
                 return pTrack;
             }
             // Skip unavailable tracks
+            qWarning() << "WTrackMenu::getFirstTrackPointer: "
+                          "Skipping unavailable track at index"
+                       << index;
         }
         return TrackPointer();
     }

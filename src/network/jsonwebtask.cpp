@@ -208,6 +208,11 @@ QNetworkReply* JsonWebTask::doStartNetworkRequest(
         return nullptr;
     }
     QUrl url = m_baseUrl;
+    // Check that the base URL does not contain a non-trivial path
+    // that would otherwise be replaced, probably unintentionally.
+    DEBUG_ASSERT(url.path().isEmpty() ||
+            url.path() == QStringLiteral("/") ||
+            url.path() == m_request.path);
     url.setPath(m_request.path);
     VERIFY_OR_DEBUG_ASSERT(url.isValid()) {
         kLogger.warning() << "Invalid request path" << m_request.path;
