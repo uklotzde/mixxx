@@ -12,6 +12,15 @@
 
 class TrackCollectionManager;
 
+/// Base class for tabular track list views.
+///
+/// The abstract model behind `WTrackTableView`.
+///
+/// Closely coupled with `BaseSqlTableModel` from which it has been extracted once.
+///
+/// Serves as an extension point for integrating external track data into Mixxx.
+/// It allows to view track lists provided by external libraries using `WTrackTableView`
+/// without importing redundant data into the Mixxx database.
 class BaseTrackTableModel : public QAbstractTableModel, public TrackModel {
     Q_OBJECT
     DISALLOW_COPY_AND_ASSIGN(BaseTrackTableModel);
@@ -119,12 +128,11 @@ class BaseTrackTableModel : public QAbstractTableModel, public TrackModel {
     static constexpr int defaultColumnWidth() {
         return 50;
     }
-    static QStringList defaultTableColumns();
 
     // Build a map from the column names to their indices
-    // used by fieldIndex(). This function has to be called
+    // used by fieldIndex().
     void initTableColumnsAndHeaderProperties(
-            const QStringList& tableColumns = defaultTableColumns());
+            const QStringList& tableColumns);
 
     QString columnNameForFieldIndex(int index) const {
         return m_columnCache.columnNameForFieldIndex(index);
@@ -289,8 +297,6 @@ class BaseTrackTableModel : public QAbstractTableModel, public TrackModel {
         QHash</*role*/ int, QVariant> header;
     };
     QVector<ColumnHeader> m_columnHeaders;
-
-    int countValidColumnHeaders() const;
 
     TrackId m_previewDeckTrackId;
 
