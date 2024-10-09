@@ -227,7 +227,7 @@ class BaseTrackTableModel : public QAbstractTableModel, public TrackModel {
     virtual QVariant rawValue(
             const QModelIndex& index) const = 0;
 
-    QVariant roleValue(
+    virtual QVariant roleValue(
             const QModelIndex& index,
             QVariant&& rawValue,
             int role) const;
