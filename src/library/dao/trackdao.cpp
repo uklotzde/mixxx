@@ -155,7 +155,7 @@ TrackId TrackDAO::getTrackIdByLocation(const QString& location) const {
         return {};
     }
     if (!query.next()) {
-        qDebug() << "TrackDAO::getTrackId(): Track location not found in library:" << location;
+        qWarning() << "TrackDAO::getTrackId(): Track location not found in library:" << location;
         return {};
     }
     const auto trackId = TrackId(query.value(query.record().indexOf("id")));
