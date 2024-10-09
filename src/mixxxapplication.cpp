@@ -2,6 +2,7 @@
 
 #include <QThreadPool>
 #include <QTouchEvent>
+#include <QUrl>
 #include <QtDebug>
 #include <QtGlobal>
 
@@ -150,6 +151,10 @@ void MixxxApplication::registerMetaTypes() {
     qRegisterMetaType<mixxx::library::tags::Score>("mixxx::library::tags::Score");
     qRegisterMetaType<mixxx::library::tags::Tag>("mixxx::library::tags::Tag");
     qRegisterMetaType<mixxx::library::tags::TagVector>("mixxx::library::tags::TagVector");
+
+    // QUrl
+    qRegisterMetaType<QList<QUrl>>();
+    qRegisterMetaType<QMap<QUrl, QString>>();
 
     // Various custom data types
     qRegisterMetaType<mixxx::ReplayGain>("mixxx::ReplayGain");
