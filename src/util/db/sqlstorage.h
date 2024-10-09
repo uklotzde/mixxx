@@ -20,7 +20,7 @@ class SqlStorage {
 
     // Attach an open database connection to the storage class.
     // Implementations might need to do the following:
-    //  - initialization of prepared queries
+    //  - initialization of queries
     //  - creation of (temporary) tables/views
     //  - initial population of internal caches
     // This database connection stays open and should be used
