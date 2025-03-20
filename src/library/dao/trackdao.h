@@ -57,6 +57,8 @@ class TrackDAO : public QObject, public virtual DAO, public virtual GlobalTrackC
     QList<TrackRef> getAllTrackRefs(
             const QDir& rootDir) const;
 
+    TrackId getTrackIdByRef(
+            const TrackRef& trackRef) const;
     TrackPointer getTrackByRef(
             const TrackRef& trackRef) const;
 
