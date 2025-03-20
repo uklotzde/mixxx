@@ -1658,6 +1658,20 @@ TrackPointer TrackDAO::getTrackById(TrackId trackId) const {
     return pTrack;
 }
 
+TrackId TrackDAO::getTrackIdByRef(
+        const TrackRef& trackRef) const {
+    if (trackRef.getId().isValid()) {
+        return trackRef.getId();
+    }
+    const auto pTrack = GlobalTrackCacheLocker().lookupTrackByRef(trackRef);
+    if (pTrack) {
+        const auto trackId = pTrack->getId();
+        DEBUG_ASSERT(trackId.isValid());
+        return trackId;
+    }
+    return getTrackIdByLocation(trackRef.getLocation());
+}
+
 TrackPointer TrackDAO::getTrackByRef(
         const TrackRef& trackRef) const {
     if (!trackRef.isValid()) {
