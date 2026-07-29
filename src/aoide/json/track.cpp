@@ -20,9 +20,7 @@ QJsonValue optionalPositiveIntJsonValue(const QString& value) {
     }
 }
 
-#if !defined(NDEBUG) || defined(MIXXX_DEBUG_ASSERTIONS_FATAL)
 constexpr int kArtworkDigestSize = 32;
-#endif
 
 constexpr int kArtworkThumbnailWidth = 4;
 constexpr int kArtworkThumbnailHeight = 4;
